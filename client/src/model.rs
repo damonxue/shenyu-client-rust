@@ -57,9 +57,21 @@ pub enum EventType {
     OFFLINE
 }
 
+impl Display for EventType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EventType::REGISTER => write!(f, "REGISTER"),
+            EventType::UPDATED => write!(f, "UPDATED"),
+            EventType::DELETED => write!(f, "DELETED"),
+            EventType::IGNORED => write!(f, "IGNORED"),
+            EventType::OFFLINE => write!(f, "OFFLINE"),
+        }
+    }
+}
 
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Deserialize)]
 pub struct EnvConfig {

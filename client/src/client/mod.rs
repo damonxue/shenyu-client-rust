@@ -126,8 +126,9 @@ impl ShenyuClient {
         let rpc_type = &self.env.uri.rpc_type.clone();
         let context_path = &self.env.uri.context_path.clone();
         let host = match local_ip() {
-            std::net::IpAddr::V4(ipv4) => ipv4,
-            std::net::IpAddr::V6(ipv6) => ipv6.to_ipv4().unwrap(),
+            Ok(std::net::IpAddr::V4(ipv4)) => ipv4,
+            Ok(std::net::IpAddr::V6(ipv6)) => ipv6.to_ipv4().unwrap(),
+            _ => todo!("Handle error")
         };
         let port = &self.port;
 

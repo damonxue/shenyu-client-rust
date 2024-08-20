@@ -55,3 +55,6 @@ local-ip-address = "0.4.9"
 # note: Must be the same as the tonic version
 tonic-reflection = { version = "0.12.1" }
 quote = "1.0.36"
+
+[dev-dependencies]
+mockall = "0.10.2"
