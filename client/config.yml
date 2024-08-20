@@ -1,0 +1,16 @@
+shenyu:
+  register:
+    register_type: "http"
+    servers: "http://127.0.0.1:9095"
+    props:
+      username: "admin"
+      password: "123456"
+  uri:
+    app_name: "app1"
+    host: "127.0.0.1"
+    port: 8000
+    context_path: "/xxx"
+    environment: "test"
+    rpc_type: "http"
+
+
