@@ -1,2 +1,5 @@
 /target
 /crates/*/target
+.idea
+.DS_Store
+*.lock
