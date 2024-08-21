@@ -40,11 +40,11 @@ pub struct ShenyuClient {
     register_meta_data_path_list: Vec<String>,
     register_uri_list: Vec<String>,
     register_token_servers: Vec<String>,
-    uri_infos: Vec<UriInfo>,
+    uri_infos: Box<Vec<UriInfo>>,
 }
 
 impl ShenyuClient {
-    pub async fn new(config: ShenYuConfig, app_name: &str, uri_infos: Vec<UriInfo>, port: u16) -> Result<Self, String> {
+    pub async fn new(config: ShenYuConfig, app_name: &str, uri_infos: &Vec<UriInfo>, port: u16) -> Result<Self, String> {
         let mut headers = HashMap::new();
         headers.insert("Content-Type".to_string(), "application/json;charset=UTF-8".to_string());
 
@@ -57,7 +57,7 @@ impl ShenyuClient {
             register_meta_data_path_list: vec![],
             register_uri_list: vec![],
             register_token_servers: vec![],
-            uri_infos,
+            uri_infos: Box::new(uri_infos.clone()),
         };
 
         client.set_up_gateway_service_url()?;
