@@ -44,6 +44,12 @@ pub struct ShenyuClient {
 }
 
 impl ShenyuClient {
+    pub async fn init(&self) {
+        todo!()
+    }
+}
+
+impl ShenyuClient {
 
     pub async fn new(config: ShenYuConfig, app_name: &str, uri_infos: &Vec<UriInfo>, port: u16) -> Result<Self, String> {
         let mut headers = HashMap::new();

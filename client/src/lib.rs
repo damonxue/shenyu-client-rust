@@ -63,7 +63,7 @@ mod axum_impl {
     ///     "Not found"
     /// }
     ///
-    /// let app = ShenYuRouter::new("shenyu_client_app")
+    /// let app = ShenYuRouter::<()>::new("shenyu_client_app")
     ///     .nest("/api", ShenYuRouter::new("api"))
     ///     .route("/health", get(health_handler))
     ///     .route("/users", post(create_user_handler));
@@ -189,13 +189,12 @@ impl ShenyuClient {
     pub async fn parse(path: &str, router: Box<dyn IRouter>, port: u16) -> Result<Self, String>
     {
         let config = ShenYuConfig::from_yaml_file(path).unwrap();
-        Self::from(config, router, port).await
+        Self::from(config, router.app_name(), router.uri_infos(), port).await
     }
 
-    pub async fn from(config: ShenYuConfig, router: Box<dyn IRouter>, port: u16) -> Result<Self, String>
+    pub async fn from(config: ShenYuConfig, app_name: &str, uri_infos: &Vec<UriInfo>, port: u16) -> Result<Self, String>
     {
-        let router = router.as_ref();
-        Self::new(config, router.app_name(), router.uri_infos(), port).await
+        Self::new(config, app_name, uri_infos, port).await
     }
 }
 
@@ -204,7 +203,45 @@ mod actix_web_impl {
     use super::model::UriInfo;
     use crate::IRouter;
     use actix_web::{web, FromRequest, Handler, Resource, Responder, Route};
+    use axum::Router;
 
+    /// A router that can be used to register routes.
+    ///
+    /// This is a wrapper around [`Router`] that provides a more ergonomic API.
+    /// ```rust
+    ///
+    /// use actix_web::{web, get, post, App};
+    /// use client::config::ShenYuConfig;    ///
+    ///
+    ///
+    ///
+    /// use client::core::ShenyuClient;
+    ///
+    /// async fn health_handler() -> &'static str {
+    ///     "OK"
+    /// }
+    ///
+    /// async fn create_user_handler() -> &'static str {
+    ///     "User created"
+    /// }
+    ///
+    /// async fn index() -> &'static str {
+    ///     "Welcome!"
+    /// }
+    ///
+    /// let router = ShenYuRouter::new("shenyu_client_app")
+    ///     .route("/health", web::get(), health_handler)
+    ///     .route("/users", web::post(), create_user_handler)
+    ///     .service("/index.html", web::get(), index);
+    /// let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
+    /// let res = ShenyuClient::from(config, router.app_name(), router.uri_infos(), 9527).await;
+    /// res.unwrap().init().await;
+    /// let resouces = router.resources();
+    /// let app = App::new().service(resouces);
+    /// // then app is same as actix_web::App
+    ///
+    /// ```
+    ///
     pub struct ShenYuRouter {
         app_name: String,
         resources: Vec<Resource>,
@@ -253,6 +290,10 @@ mod actix_web_impl {
             self
         }
 
+        pub fn resources(self) -> Vec<Resource> {
+            self.resources
+        }
+
     }
 
     impl IRouter for ShenYuRouter {
@@ -279,6 +320,7 @@ mod tests_axum {
     use reqwest::Client;
     use serde_json::Value;
     use std::collections::HashMap;
+    use crate::IRouter;
 
     async fn health_handler() -> &'static str {
         "OK"
@@ -310,7 +352,7 @@ mod tests_axum {
             .route("/health", get(health_handler))
             .route("/users", post(create_user_handler));
         let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
-        let res = ShenyuClient::from(config, Box::new(app), 9527).await;
+        let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527).await;
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
         println!("client.token: {:?}", client.headers.get("X-Access-Token").unwrap_or(&"None".to_string()));
@@ -343,7 +385,7 @@ mod tests_actix_web {
     use crate::config::ShenYuConfig;
     use crate::core::ShenyuClient;
     use crate::IRouter;
-    use actix_web::web;
+    use actix_web::{App, web};
 
     async fn health_handler() -> &'static str {
         "OK"
@@ -364,7 +406,9 @@ mod tests_actix_web {
             .route("/users", web::post(), create_user_handler)
             .service("/index.html", web::get(), index);
         let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
-        let res = ShenyuClient::from(config, Box::new(app), 9527).await;
+        let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527).await;
+        let resouces = app.resources();
+        let a = App::new().service(resouces);
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
         println!("client.token: {:?}", client.headers.get("X-Access-Token").unwrap_or(&"None".to_string()));
