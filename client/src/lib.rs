@@ -19,7 +19,9 @@
 
 use crate::model::UriInfo;
 
-pub mod client;
+pub mod core;
+pub mod config;
+pub mod macros;
 pub mod error;
 pub mod model;
 
@@ -68,7 +70,8 @@ mod axum_impl {
     ///
     /// ```
     ///
-    pub struct ShenYuRouter<S> {
+    #[derive(Debug, Clone)]
+    pub struct ShenYuRouter<S = ()> {
         app_name: String,
         inner: Router<S>,
         uri_infos: Vec<UriInfo>,
@@ -263,16 +266,17 @@ mod actix_web_impl {
     }
 }
 
-use crate::client::ShenyuClient;
-use crate::model::ShenYuConfig;
+use crate::config::ShenYuConfig;
+use crate::core::ShenyuClient;
 
 #[cfg(test)]
 #[cfg(feature = "axum")]
 mod tests_axum {
     use super::axum_impl::ShenYuRouter;
-    use crate::client::ShenyuClient;
-    use crate::model::ShenYuConfig;
+    use crate::config::ShenYuConfig;
+    use crate::core::ShenyuClient;
     use axum::routing::{get, post};
+    use axum::Router;
     use reqwest::Client;
     use serde_json::Value;
     use std::collections::HashMap;
@@ -300,6 +304,15 @@ mod tests_axum {
         print!("res_data:token {:?}", res_data["data"]["token"]);
     }
 
+    #[tokio::test]
+    async fn build_client() {
+        let app = Router::new()
+            .nest("/api", Router::new())
+            .route("/health", get(health_handler))
+            .route("/users", post(create_user_handler));
+        // 通过指针操作方式获取app的inner
+
+    }
     #[tokio::test]
     async fn build_client() {
         let app = ShenYuRouter::<()>::new("shenyu_client_app")
@@ -337,8 +350,8 @@ mod tests_axum {
 #[cfg(feature = "actix-web")]
 mod tests_actix_web {
     use super::actix_web_impl::ShenYuRouter;
-    use crate::client::ShenyuClient;
-    use crate::model::ShenYuConfig;
+    use crate::config::ShenYuConfig;
+    use crate::core::ShenyuClient;
     use crate::IRouter;
     use actix_web::web;
 

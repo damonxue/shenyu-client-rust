@@ -15,13 +15,25 @@
 // specific language governing permissions and limitations
 // under the License.
 
-use crate::model::{EnvConfig, ShenYuConfig};
+use serde::Deserialize;
 use serde_yaml;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 
-impl ShenYuConfig {
+#[derive(Debug, Deserialize)]
+pub struct EnvConfig {
+    pub(crate) shenyu: ShenYuConfig,
+}
 
+#[derive(Debug, Deserialize)]
+pub struct ShenYuConfig {
+    pub register: RegisterConfig,
+    pub uri: UriConfig,
+}
+
+
+impl ShenYuConfig {
     pub fn from_yaml_file(file_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
@@ -29,6 +41,23 @@ impl ShenYuConfig {
         let config: EnvConfig = serde_yaml::from_str(&contents)?;
         Ok(config.shenyu)
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RegisterConfig {
+    pub register_type: String,
+    pub servers: String,
+    pub props: HashMap<String, String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UriConfig {
+    pub app_name: String,
+    pub host: String,
+    pub port: u16,
+    pub context_path: String,
+    pub environment: String,
+    pub rpc_type: String,
 }
 
 #[cfg(test)]

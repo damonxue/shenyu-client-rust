@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+use std::fmt::{Display, Formatter};
+
 #[derive(Debug, Clone)]
 pub struct MetaInfo {
     pub path: String,
@@ -69,34 +71,3 @@ impl Display for EventType {
     }
 }
 
-use serde::Deserialize;
-use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
-
-#[derive(Debug, Deserialize)]
-pub struct EnvConfig {
-    pub(crate) shenyu: ShenYuConfig,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ShenYuConfig {
-    pub register: RegisterConfig,
-    pub uri: UriConfig,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct RegisterConfig {
-    pub register_type: String,
-    pub servers: String,
-    pub props: HashMap<String, String>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct UriConfig {
-    pub app_name: String,
-    pub host: String,
-    pub port: u16,
-    pub context_path: String,
-    pub environment: String,
-    pub rpc_type: String,
-}

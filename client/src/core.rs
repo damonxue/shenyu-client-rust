@@ -15,15 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
+use crate::config::ShenYuConfig;
 use crate::error::ShenYuError;
-use crate::model::{EventType, ShenYuConfig, UriInfo};
+use crate::model::{EventType, UriInfo};
 use local_ip_address::local_ip;
 use reqwest::{Client, Response};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::io::Error;
-
-mod config;
 
 pub const REGISTER_META_DATA_SUFFIX: &str = "/shenyu-client/register-metadata";
 pub const REGISTER_URI_SUFFIX: &str = "/shenyu-client/register-uri";
@@ -44,6 +43,7 @@ pub struct ShenyuClient {
 }
 
 impl ShenyuClient {
+
     pub async fn new(config: ShenYuConfig, app_name: &str, uri_infos: &Vec<UriInfo>, port: u16) -> Result<Self, String> {
         let mut headers = HashMap::new();
         headers.insert("Content-Type".to_string(), "application/json;charset=UTF-8".to_string());
