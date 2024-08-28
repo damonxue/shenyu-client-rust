@@ -276,7 +276,6 @@ mod tests_axum {
     use crate::config::ShenYuConfig;
     use crate::core::ShenyuClient;
     use axum::routing::{get, post};
-    use axum::Router;
     use reqwest::Client;
     use serde_json::Value;
     use std::collections::HashMap;
@@ -304,15 +303,6 @@ mod tests_axum {
         print!("res_data:token {:?}", res_data["data"]["token"]);
     }
 
-    #[tokio::test]
-    async fn build_client() {
-        let app = Router::new()
-            .nest("/api", Router::new())
-            .route("/health", get(health_handler))
-            .route("/users", post(create_user_handler));
-        // 通过指针操作方式获取app的inner
-
-    }
     #[tokio::test]
     async fn build_client() {
         let app = ShenYuRouter::<()>::new("shenyu_client_app")
