@@ -1,7 +1,7 @@
 shenyu:
   register:
     register_type: "http"
-    servers: "http://127.0.0.1:9095"
+    servers: "xx.xx.xx.x1"
     props:
       username: "admin"
       password: "123456"

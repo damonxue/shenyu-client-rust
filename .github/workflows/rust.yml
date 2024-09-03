@@ -41,7 +41,3 @@ jobs:
       - name: Run tests
         run: cargo test --verbose --all-features
 
-      - name: Stop docker
-        run: |
-          docker stop shenyu-admin
-          docker rm shenyu-admin
