@@ -36,19 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build
-        run: cargo build --verbose
-
-      - name: Build and run docker
-        run: |
-          docker pull apache/shenyu-admin:latest
-          docker run -d -p 9095:9095 --name shenyu-admin apache/shenyu-admin:latest
-
-      - name: Wait for shenyu admin to start
-        run: |
-          while ! curl -s http://localhost:9095/actuator/health > /dev/null; do
-            echo "Waiting for shenyu-admin to start..."
-            sleep 5
-          done
+        run: cargo build --verbose --all-features
 
       - name: Run tests
         run: cargo test --verbose --all-features
