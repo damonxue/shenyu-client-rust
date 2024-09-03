@@ -27,6 +27,7 @@ use std::net::{IpAddr, Ipv4Addr};
 
 pub const REGISTER_META_DATA_SUFFIX: &str = "/shenyu-client/register-metadata";
 pub const REGISTER_URI_SUFFIX: &str = "/shenyu-client/register-uri";
+pub const REGISTER_DISCOVERY_CONFIG_SUFFIX: &str = "/shenyu-client/register-discoveryConfig";
 pub const PLATFORM_LOGIN_SUFFIX: &str = "/platform/login";
 
 #[derive(Debug)]
@@ -40,6 +41,7 @@ pub struct ShenyuClient {
     register_meta_data_path_list: Vec<String>,
     register_uri_list: Vec<String>,
     register_token_servers: Vec<String>,
+    register_discover_config_servers: Vec<String>,
     uri_infos: Box<Vec<UriInfo>>,
 }
 
@@ -64,6 +66,7 @@ impl ShenyuClient {
             register_meta_data_path_list: vec![],
             register_uri_list: vec![],
             register_token_servers: vec![],
+            register_discover_config_servers: vec![],
             uri_infos: Box::new(uri_infos.clone()),
         };
 
@@ -80,12 +83,14 @@ impl ShenyuClient {
 }
 
 impl ShenyuClient {
+    
     fn set_up_gateway_service_url(&mut self) -> Result<(), String> {
         self.gateway_base_urls = self.env.register.servers.split(',').map(|s| s.to_string()).collect();
 
         self.register_meta_data_path_list = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, REGISTER_META_DATA_SUFFIX)).collect();
         self.register_uri_list = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, REGISTER_URI_SUFFIX)).collect();
         self.register_token_servers = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, PLATFORM_LOGIN_SUFFIX)).collect();
+        self.register_discover_config_servers = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, REGISTER_DISCOVERY_CONFIG_SUFFIX)).collect();
 
         Ok(())
     }
