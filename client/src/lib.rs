@@ -316,11 +316,11 @@ mod tests_axum {
     use super::axum_impl::ShenYuRouter;
     use crate::config::ShenYuConfig;
     use crate::core::ShenyuClient;
+    use crate::IRouter;
     use axum::routing::{get, post};
     use reqwest::Client;
     use serde_json::Value;
     use std::collections::HashMap;
-    use crate::IRouter;
 
     async fn health_handler() -> &'static str {
         "OK"
@@ -361,6 +361,9 @@ mod tests_axum {
         assert!(res.is_ok());
         let res = client.register_uri().await;
         assert!(res.is_ok());
+        let res = client.register_discovery_config().await;
+        assert!(res.is_ok());
+        client.offline_register().await;
     }
 
     #[test]
@@ -385,7 +388,7 @@ mod tests_actix_web {
     use crate::config::ShenYuConfig;
     use crate::core::ShenyuClient;
     use crate::IRouter;
-    use actix_web::{App, web};
+    use actix_web::{web, App};
 
     async fn health_handler() -> &'static str {
         "OK"
@@ -417,6 +420,9 @@ mod tests_actix_web {
         assert!(res.is_ok());
         let res = client.register_uri().await;
         assert!(res.is_ok());
+        let res = client.register_discovery_config().await;
+        assert!(res.is_ok());
+        client.offline_register().await;
     }
 
     #[test]

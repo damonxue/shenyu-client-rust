@@ -30,6 +30,7 @@ pub struct EnvConfig {
 pub struct ShenYuConfig {
     pub register: RegisterConfig,
     pub uri: UriConfig,
+    pub discovery: DiscoveryConfig,
 }
 
 
@@ -59,6 +60,17 @@ pub struct UriConfig {
     pub environment: String,
     pub rpc_type: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct DiscoveryConfig {
+    pub protocol: String,
+    pub discovery_type: String,
+    pub server_lists: String,
+    pub register_path: String,
+    pub plugin_name: String,
+    pub props: HashMap<String, String>,
+}
+
 
 #[cfg(test)]
 mod tests {

@@ -12,5 +12,26 @@ shenyu:
     context_path: "/xxx"
     environment: "test"
     rpc_type: "http"
+  discovery:
+    protocol: "http://"
+    discovery_type: "zookeeper"
+    server_lists: "127.0.0.1:2181"
+    register_path: "/shenyu/discovery/http_example"
+    plugin_name: ""
+    props:
+      baseSleepTimeMilliseconds: 1000
+      maxRetries: 4
+      maxSleepTimeMilliseconds: 5000
+      connectionTimeoutMilliseconds: 60000
+      sessionTimeoutMilliseconds: 8
+    # discovery_type: "nacos"
+    # server_lists: "http://127.0.0.1:8848"
+    # register_path: "/shenyu/discovery/http_example"
+    # discovery_type: "eureka"
+    # server_lists: "http://127.0.0.1:8761/eureka"
+    # register_path: "shenyu_discovery_http_example"
+    # discovery_type: "etcd"
+    # server_lists: "http://127.0.0.1:2379"
+    # register_path: "shenyu_discovery_http_example"
 
 

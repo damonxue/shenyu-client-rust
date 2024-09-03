@@ -28,6 +28,7 @@ use std::net::{IpAddr, Ipv4Addr};
 pub const REGISTER_META_DATA_SUFFIX: &str = "/shenyu-client/register-metadata";
 pub const REGISTER_URI_SUFFIX: &str = "/shenyu-client/register-uri";
 pub const REGISTER_DISCOVERY_CONFIG_SUFFIX: &str = "/shenyu-client/register-discoveryConfig";
+pub const REGISTER_OFFLINE_SUFFIX: &str = "/shenyu-client/offline";
 pub const PLATFORM_LOGIN_SUFFIX: &str = "/platform/login";
 
 #[derive(Debug)]
@@ -36,12 +37,14 @@ pub struct ShenyuClient {
     pub(crate) headers: HashMap<String, String>,
     app_name: String,
     env: ShenYuConfig,
+    host: Option<String>,
     port: u16,
     gateway_base_urls: Vec<String>,
     register_meta_data_path_list: Vec<String>,
     register_uri_list: Vec<String>,
     register_token_servers: Vec<String>,
     register_discover_config_servers: Vec<String>,
+    register_offline_servers: Vec<String>,
     uri_infos: Box<Vec<UriInfo>>,
 }
 
@@ -61,12 +64,14 @@ impl ShenyuClient {
             headers: HashMap::new(),
             app_name: app_name.to_string(),
             env: config,
+            host: None,
             port,
             gateway_base_urls: vec![],
             register_meta_data_path_list: vec![],
             register_uri_list: vec![],
             register_token_servers: vec![],
             register_discover_config_servers: vec![],
+            register_offline_servers: vec![],
             uri_infos: Box::new(uri_infos.clone()),
         };
 
@@ -91,6 +96,31 @@ impl ShenyuClient {
         self.register_uri_list = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, REGISTER_URI_SUFFIX)).collect();
         self.register_token_servers = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, PLATFORM_LOGIN_SUFFIX)).collect();
         self.register_discover_config_servers = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, REGISTER_DISCOVERY_CONFIG_SUFFIX)).collect();
+        self.register_offline_servers = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, REGISTER_OFFLINE_SUFFIX)).collect();
+
+        let mut host = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+        #[cfg(not(target_os = "macos"))]
+        {
+            host = match local_ip() {
+                Ok(std::net::IpAddr::V4(ipv4)) => IpAddr::V4(ipv4),
+                Ok(std::net::IpAddr::V6(ipv6)) => IpAddr::from(ipv6.to_ipv4().unwrap()),
+                _ => todo!("Handle error")
+            };
+        }
+        #[cfg(target_os = "macos")]
+        {
+            use local_ip_address::macos;
+            for (_, ipaddr) in macos::list_afinet_netifas().unwrap() {
+                if IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)).eq(&ipaddr) {
+                    continue;
+                }
+                host = match ipaddr {
+                    IpAddr::V4(ipv4) => IpAddr::from(ipv4),
+                    _ => continue,
+                };
+            }
+        }
+        self.host = Some(host.to_string());
 
         Ok(())
     }
@@ -137,35 +167,15 @@ impl ShenyuClient {
         let app_name = &self.app_name.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let context_path = &self.env.uri.context_path.clone();
-        let mut host = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
-        #[cfg(not(target_os = "macos"))]
-        {
-            host = match local_ip() {
-                Ok(std::net::IpAddr::V4(ipv4)) => IpAddr::V4(ipv4),
-                Ok(std::net::IpAddr::V6(ipv6)) => IpAddr::from(ipv6.to_ipv4().unwrap()),
-                _ => todo!("Handle error")
-            };
-        }
-        #[cfg(target_os = "macos")]
-        {
-            use local_ip_address::macos;
-            for (_, ipaddr) in macos::list_afinet_netifas().unwrap() {
-                if IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)).eq(&ipaddr) {
-                    continue;
-                }
-                host = match ipaddr {
-                    IpAddr::V4(ipv4) => IpAddr::from(ipv4),
-                    _ => continue,
-                };
-            }
-        }
+
         let port = &self.port;
+        let host = &self.host;
 
         let json_data = serde_json::json!({
             "appName": app_name,
             "contextPath": context_path,
             "protocol": rpc_type,
-            "host": host.to_string(),
+            "host": host.clone().unwrap(),
             "port": port,
             "eventType": EventType::REGISTER.to_string(),
         });
@@ -177,7 +187,7 @@ impl ShenyuClient {
             }
         }
 
-        println!("[ERROR], register uri failed, app_name: {}, host: {}, port: {}", app_name, host, port);
+        println!("[ERROR], register uri failed, app_name: {}, host: {}, port: {}", app_name, host.clone().unwrap(), port);
         Ok(false)
     }
 
@@ -225,4 +235,66 @@ impl ShenyuClient {
         println!("[ERROR], register metadata failed, app_name: {}, path: {}, contextPath: {}", app_name, path, context_path);
         Ok(false)
     }
+
+    pub async fn register_discovery_config(&self) -> Result<bool, Error> {
+        let discovery_type = &self.env.discovery.discovery_type.clone();
+        let register_path = &self.env.discovery.register_path.clone();
+        let server_lists = &self.env.discovery.server_lists.clone();
+        let props = &self.env.discovery.props.clone();
+        let plugin_name = &self.env.discovery.plugin_name.clone();
+        let context_path = &self.env.uri.context_path.clone();
+
+        let port = &self.port;
+        let host = &self.host;
+
+        let json_data = serde_json::json!({
+            "name": "default".to_string() + discovery_type,
+            "selectorName": context_path,
+            "handler": "{}",
+            "listenerNode":register_path,
+            "serverList": server_lists,
+            "props": props,
+            "discoveryType": discovery_type.clone(),
+            "pluginName": plugin_name,
+        });
+
+        for url in &self.register_discover_config_servers {
+            if self.request(url, &json_data).await? {
+                println!("[SUCCESS], register discover config success, register data: {:?}", json_data);
+                return Ok(true);
+            }
+        }
+
+        println!("[ERROR], register discover config failed, discovery_type: {}, host: {}, port: {}", discovery_type, host.clone().unwrap(), port);
+        Ok(false)
+    }
+
+    pub async fn offline_register(&self){
+        let app_name = &self.app_name.clone();
+        let rpc_type = &self.env.uri.rpc_type.clone();
+        let context_path = &self.env.uri.context_path.clone();
+
+        let port = &self.port;
+        let host = &self.host;
+
+        let json_data = serde_json::json!({
+            "appName": app_name,
+            "contextPath": context_path,
+            "protocol": rpc_type,
+            "host": host.clone().unwrap(),
+            "port": port,
+            "eventType": EventType::REGISTER.to_string(),
+        });
+
+        for url in &self.register_offline_servers {
+            if self.request(url, &json_data).await.unwrap() {
+                println!("[SUCCESS], register uri success, register data: {:?}", json_data);
+                return;
+            }
+        }
+
+        println!("[ERROR], register uri failed, app_name: {}, host: {}, port: {}", app_name, host.clone().unwrap(), port);
+    }
+
+
 }
