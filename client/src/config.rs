@@ -72,7 +72,7 @@ mod tests {
         print!("config_path: {:?}", config_path);
         let config = ShenYuConfig::from_yaml_file(config_path.to_str().unwrap()).unwrap();
         assert_eq!(config.register.register_type, "http");
-        assert_eq!(config.register.servers, "http://localhost:9095");
+        assert_eq!(config.register.servers, "http://127.0.0.1:9095");
         assert_eq!(config.register.props.len(), 2);
     }
 }
