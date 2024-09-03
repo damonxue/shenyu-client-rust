@@ -40,7 +40,7 @@ jobs:
 
       - name: Build and run docker
         run: |
-          docker build -t apache/shenyu-admin:latest .
+          docker pull apache/shenyu-admin:latest
           docker run -d -p 9095:9095 --name shenyu-admin apache/shenyu-admin:latest
 
       - name: Wait for shenyu admin to start
