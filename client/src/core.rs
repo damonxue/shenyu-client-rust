@@ -18,11 +18,12 @@
 use crate::config::ShenYuConfig;
 use crate::error::ShenYuError;
 use crate::model::{EventType, UriInfo};
-use local_ip_address::local_ip;
+use local_ip_address::{local_ip, macos};
 use reqwest::{Client, Response};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::io::Error;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 pub const REGISTER_META_DATA_SUFFIX: &str = "/shenyu-client/register-metadata";
 pub const REGISTER_URI_SUFFIX: &str = "/shenyu-client/register-uri";
@@ -40,6 +41,12 @@ pub struct ShenyuClient {
     register_uri_list: Vec<String>,
     register_token_servers: Vec<String>,
     uri_infos: Box<Vec<UriInfo>>,
+}
+
+impl ShenyuClient {
+    pub async fn init(&self) {
+        todo!()
+    }
 }
 
 impl ShenyuClient {
@@ -125,11 +132,25 @@ impl ShenyuClient {
         let app_name = &self.app_name.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let context_path = &self.env.uri.context_path.clone();
-        let host = match local_ip() {
-            Ok(std::net::IpAddr::V4(ipv4)) => ipv4,
-            Ok(std::net::IpAddr::V6(ipv6)) => ipv6.to_ipv4().unwrap(),
-            _ => todo!("Handle error")
-        };
+        let mut host = IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1));
+        #[cfg(not(target_os = "macos"))]
+        {
+            host = match local_ip() {
+                Ok(std::net::IpAddr::V4(ipv4)) => ipv4,
+                Ok(std::net::IpAddr::V6(ipv6)) => ipv6.to_ipv4().unwrap(),
+                _ => todo!("Handle error")
+            };
+        }
+        #[cfg(target_os = "macos")]
+        for (_, ipaddr) in macos::list_afinet_netifas().unwrap() {
+            if IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)).eq(&ipaddr) {
+                continue;
+            }
+            host = match ipaddr {
+                IpAddr::V4(ipv4) => IpAddr::from(ipv4),
+                _ => continue,
+            };
+        }
         let port = &self.port;
 
         let json_data = serde_json::json!({
