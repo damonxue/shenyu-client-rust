@@ -34,7 +34,7 @@ pub trait IRouter {
 }
 
 #[cfg(feature = "axum")]
-mod axum_impl {
+pub mod axum_impl {
     use super::model::UriInfo;
     use crate::IRouter;
     use axum::extract::Request;
@@ -199,7 +199,7 @@ impl ShenyuClient {
 }
 
 #[cfg(feature = "actix-web")]
-mod actix_web_impl {
+pub mod actix_web_impl {
     use super::model::UriInfo;
     use crate::IRouter;
     use actix_web::{web, FromRequest, Handler, Resource, Responder, Route};

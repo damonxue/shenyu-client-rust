@@ -34,7 +34,7 @@ pub const PLATFORM_LOGIN_SUFFIX: &str = "/platform/login";
 #[derive(Debug)]
 #[warn(dead_code)]
 pub struct ShenyuClient {
-    pub(crate) headers: HashMap<String, String>,
+    pub(super) headers: HashMap<String, String>,
     app_name: String,
     env: ShenYuConfig,
     host: Option<String>,
@@ -46,12 +46,6 @@ pub struct ShenyuClient {
     register_discover_config_servers: Vec<String>,
     register_offline_servers: Vec<String>,
     uri_infos: Box<Vec<UriInfo>>,
-}
-
-impl ShenyuClient {
-    pub async fn init(&self) {
-        todo!()
-    }
 }
 
 impl ShenyuClient {

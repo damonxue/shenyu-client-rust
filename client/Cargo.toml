@@ -17,7 +17,7 @@
 
 
 [package]
-name = "client"
+name = "shenyu-client-rust"
 version = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

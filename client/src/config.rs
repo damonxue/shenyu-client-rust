@@ -36,7 +36,9 @@ pub struct ShenYuConfig {
 
 impl ShenYuConfig {
     pub fn from_yaml_file(file_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let mut file = File::open(file_path)?;
+        let current_dir = std::env::current_dir().unwrap();
+
+        let mut file = File::open(current_dir.join(file_path))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let config: EnvConfig = serde_yaml::from_str(&contents)?;
