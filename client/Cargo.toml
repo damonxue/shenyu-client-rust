@@ -39,7 +39,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 reqwest = { workspace = true, features = ["json"] }
 tower-service = "0.3.3"
-serde_yaml = "0.9.34+deprecated"
+serde_yaml = "0.9.34"
 
 # http micro services need.
 axum = { version = "0.7.5", optional = true }

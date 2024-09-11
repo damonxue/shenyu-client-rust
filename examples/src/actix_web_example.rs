@@ -16,51 +16,57 @@
 // under the License.
 
 #![cfg(feature = "actix-web")]
-use actix_web::{web, App, HttpServer};
+
 use actix_web::rt::signal;
+use actix_web::{middleware, web, App, HttpServer, Responder};
 use shenyu_client_rust::actix_web_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
-use shenyu_client_rust::{IRouter, core::ShenyuClient};
+use shenyu_client_rust::{core::ShenyuClient, shenyu_router, IRouter};
 
-async fn health_handler() -> &'static str {
+async fn health_handler() -> impl Responder {
     "OK"
 }
 
-async fn create_user_handler() -> &'static str {
+async fn create_user_handler() -> impl Responder {
     "User created"
 }
 
-async fn index() -> &'static str {
+async fn index() -> impl Responder {
     "Welcome!"
 }
 
-#[tokio::main]
-async fn main() {
-    let app = ShenYuRouter::new("shenyu_client_app")
-        .route("/health", web::get(), health_handler)
-        .route("/users", web::post(), create_user_handler)
-        .service("/index.html", web::get(), index);
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let mut router = ShenYuRouter::new("shenyu_client_app");
     let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
-    let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527).await;
-    let resouces = app.resources();
-    let actix_app = App::new().service(resouces);
+
+    let server = HttpServer::new(move || {
+            let app = App::new().wrap(middleware::Logger::default());
+            shenyu_router!(
+                router,
+                app,
+                "/health" => get(health_handler)
+                "/create_user" => post(create_user_handler)
+                "/" => get(index)
+            );
+            app
+        })
+        .bind(("127.0.0.1", 8080))?
+        .run();
+    let res = ShenyuClient::from(config, router.app_name(), router.uri_infos(), 9527).await;
+
 
     let client = &mut res.unwrap();
     client.register_all_metadata(true).await.expect("Failed to register metadata");
     client.register_uri().await.expect("Failed to register URI");
     client.register_discovery_config().await.expect("Failed to register discovery config");
 
-    // Start Actix-web server
-    let server = HttpServer::new(move || actix_app)
-        .bind("0.0.0.0:4000")
-        .unwrap()
-        .run();
-
     // Add shutdown hook
     tokio::select! {
-        _ = server => {},
+        _ = server => {Ok(())},
         _ = signal::ctrl_c() => {
-            client.offline_register().await;
+            let _ = client.offline_register().await;
+            Ok(())
         }
     }
 }

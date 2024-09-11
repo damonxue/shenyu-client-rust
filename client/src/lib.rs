@@ -202,8 +202,7 @@ impl ShenyuClient {
 pub mod actix_web_impl {
     use super::model::UriInfo;
     use crate::IRouter;
-    use actix_web::{web, FromRequest, Handler, Resource, Responder, Route};
-    use axum::Router;
+    use actix_web::{FromRequest, Handler, Responder};
 
     /// A router that can be used to register routes.
     ///
@@ -242,23 +241,21 @@ pub mod actix_web_impl {
     ///
     /// ```
     ///
+    #[derive(Debug, Clone)]
     pub struct ShenYuRouter {
         app_name: String,
-        resources: Vec<Resource>,
         uri_infos: Vec<UriInfo>,
     }
 
     impl ShenYuRouter {
-
         pub fn new(app_name: &str) -> Self {
             Self {
                 app_name: app_name.to_string(),
-                resources: vec![],
                 uri_infos: Vec::new(),
             }
         }
 
-        pub fn route<F, Args>(mut self, path: &str, route: Route, handler: F) -> Self
+        pub fn route<F, Args>(mut self, path: &str) -> Self
         where
             F: Handler<Args>,
             Args: FromRequest + 'static,
@@ -270,11 +267,10 @@ pub mod actix_web_impl {
                 service_name: None,
                 method_name: None,
             });
-            self.resources.push(Resource::new(path).route(route).to(handler));
             self
         }
 
-        pub fn service<F, Args>(mut self, path: &str, route: Route, handler: F) -> Self
+        pub fn service<F, Args>(mut self, path: &str) -> Self
         where
             F: Handler<Args>,
             Args: FromRequest + 'static,
@@ -286,12 +282,7 @@ pub mod actix_web_impl {
                 service_name: None,
                 method_name: None,
             });
-            self.resources.push(web::resource(path).route(route.to(handler)));
             self
-        }
-
-        pub fn resources(self) -> Vec<Resource> {
-            self.resources
         }
 
     }
@@ -303,6 +294,16 @@ pub mod actix_web_impl {
 
         fn uri_infos(&self) -> &Vec<UriInfo> {
             &self.uri_infos
+        }
+    }
+
+    #[macro_export]
+    macro_rules! shenyu_router {
+        ($router:expr, $app:expr, $($path:expr => $method:ident($handler:expr))*) => {
+            $(
+                $router = $router.route($path);
+                $app = $app.service(web::resource($path).route(web::$method().to($handler)));
+            )*
         }
     }
 }
@@ -378,6 +379,7 @@ mod tests_axum {
         assert_eq!(uri_infos[0].path, "/health");
         assert_eq!(uri_infos[1].path, "/users");
     }
+
 }
 
 
@@ -388,30 +390,12 @@ mod tests_actix_web {
     use crate::config::ShenYuConfig;
     use crate::core::ShenyuClient;
     use crate::IRouter;
-    use actix_web::{web, App};
-
-    async fn health_handler() -> &'static str {
-        "OK"
-    }
-
-    async fn create_user_handler() -> &'static str {
-        "User created"
-    }
-
-    async fn index() -> &'static str {
-        "Welcome!"
-    }
 
     #[tokio::test]
     async fn build_client() {
-        let app = ShenYuRouter::new("shenyu_client_app")
-            .route("/health", web::get(), health_handler)
-            .route("/users", web::post(), create_user_handler)
-            .service("/index.html", web::get(), index);
+        let app = ShenYuRouter::new("shenyu_client_app");
         let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
         let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527).await;
-        let resouces = app.resources();
-        let a = App::new().service(resouces);
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
         println!("client.token: {:?}", client.headers.get("X-Access-Token").unwrap_or(&"None".to_string()));
@@ -427,10 +411,7 @@ mod tests_actix_web {
 
     #[test]
     fn it_works() {
-        let app = ShenYuRouter::new("shenyu_client_app")
-            .route("/health", web::get(), health_handler)
-            .route("/users", web::post(), create_user_handler)
-            .service("/index.html", web::get(), index);
+        let app = ShenYuRouter::new("shenyu_client_app");
         let uri_infos = app.uri_infos();
         assert_eq!(uri_infos.len(), 3);
         assert_eq!(uri_infos[0].path, "/health");
