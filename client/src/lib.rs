@@ -401,5 +401,4 @@ mod tests_actix_web {
         assert!(res.is_ok());
         client.offline_register().await;
     }
-
 }
