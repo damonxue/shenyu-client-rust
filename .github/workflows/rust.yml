@@ -41,8 +41,8 @@ jobs:
       - name: Run tests
         run: cargo test --verbose --all-features --lib
 
-      - name: Run axum_example and actix_web_example
-        run: |
-          timeout 30s cargo run --package examples --all-features --bin axum_example || true
-          timeout 30s cargo run --package examples --all-features --bin actix_web_example || true
+      - name: Run axum_example
+        run: timeout 10s cargo run --package examples --all-features --bin axum_example || true
+      - name: Run actix_web_example
+        run: timeout 10s cargo run --package examples --all-features --bin actix_web_example || true
 
