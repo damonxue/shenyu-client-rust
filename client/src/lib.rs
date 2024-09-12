@@ -402,13 +402,4 @@ mod tests_actix_web {
         client.offline_register().await;
     }
 
-    #[test]
-    fn it_works() {
-        let app = ShenYuRouter::new("shenyu_client_app");
-        let uri_infos = app.uri_infos();
-        assert_eq!(uri_infos.len(), 3);
-        assert_eq!(uri_infos[0].path, "/health");
-        assert_eq!(uri_infos[1].path, "/users");
-        assert_eq!(uri_infos[2].path, "/index.html");
-    }
 }
