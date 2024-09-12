@@ -56,7 +56,7 @@ pub enum EventType {
 
     IGNORED,
 
-    OFFLINE
+    OFFLINE,
 }
 
 impl Display for EventType {
@@ -70,4 +70,3 @@ impl Display for EventType {
         }
     }
 }
-

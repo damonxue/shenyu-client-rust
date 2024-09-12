@@ -30,10 +30,7 @@ impl ShenYuError {
 }
 
 impl Into<Error> for ShenYuError {
-
     fn into(self) -> Error {
         Error::new(std::io::ErrorKind::Other, self.message)
     }
 }
-
-

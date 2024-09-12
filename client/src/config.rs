@@ -33,7 +33,6 @@ pub struct ShenYuConfig {
     pub discovery: DiscoveryConfig,
 }
 
-
 impl ShenYuConfig {
     pub fn from_yaml_file(file_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let current_dir = std::env::current_dir().unwrap();
@@ -72,7 +71,6 @@ pub struct DiscoveryConfig {
     pub plugin_name: String,
     pub props: HashMap<String, String>,
 }
-
 
 #[cfg(test)]
 mod tests {

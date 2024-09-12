@@ -16,12 +16,12 @@
 // under the License.
 
 #![cfg(feature = "axum")]
-use axum::{routing::get, Router};
 use axum::routing::post;
-use tokio::signal;
+use axum::{routing::get, Router};
 use shenyu_client_rust::axum_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
-use shenyu_client_rust::{IRouter, core::ShenyuClient};
+use shenyu_client_rust::{core::ShenyuClient, IRouter};
+use tokio::signal;
 
 async fn health_handler() -> &'static str {
     "OK"
@@ -38,19 +38,28 @@ async fn main() {
         .route("/health", get(health_handler))
         .route("/users", post(create_user_handler));
     let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
-    let client = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527).await.unwrap();
+    let client = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527)
+        .await
+        .unwrap();
 
     let axum_app: Router = app.into();
-    client.register_all_metadata(true).await.expect("TODO: panic message");
+    client
+        .register_all_metadata(true)
+        .await
+        .expect("TODO: panic message");
     client.register_uri().await.expect("TODO: panic message");
-    client.register_discovery_config().await.expect("TODO: panic message");
+    client
+        .register_discovery_config()
+        .await
+        .expect("TODO: panic message");
 
     // Start Axum server
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, axum_app).with_graceful_shutdown(async move {
-        signal::ctrl_c().await.expect("failed to listen for event");
-        client.offline_register().await;
-    }).await.unwrap();
-
-
+    axum::serve(listener, axum_app)
+        .with_graceful_shutdown(async move {
+            signal::ctrl_c().await.expect("failed to listen for event");
+            client.offline_register().await;
+        })
+        .await
+        .unwrap();
 }

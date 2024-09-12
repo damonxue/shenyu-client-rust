@@ -19,15 +19,13 @@
 
 use crate::model::UriInfo;
 
-pub mod core;
 pub mod config;
-pub mod macros;
+pub mod core;
 pub mod error;
+pub mod macros;
 pub mod model;
 
-
 pub trait IRouter {
-
     fn app_name(&self) -> &str;
 
     fn uri_infos(&self) -> &Vec<UriInfo>;
@@ -107,7 +105,7 @@ pub mod axum_impl {
 
         pub fn route_service<T>(mut self, path: &str, service: T) -> Self
         where
-            T: Service<Request, Error=Infallible> + Clone + Send + 'static,
+            T: Service<Request, Error = Infallible> + Clone + Send + 'static,
             T::Response: IntoResponse,
             T::Future: Send + 'static,
         {
@@ -131,7 +129,7 @@ pub mod axum_impl {
         #[track_caller]
         pub fn nest_service<T>(mut self, path: &str, service: T) -> Self
         where
-            T: Service<Request, Error=Infallible> + Clone + Send + 'static,
+            T: Service<Request, Error = Infallible> + Clone + Send + 'static,
             T::Response: IntoResponse,
             T::Future: Send + 'static,
         {
@@ -172,7 +170,6 @@ pub mod axum_impl {
     }
 
     impl<S> IRouter for ShenYuRouter<S> {
-
         fn app_name(&self) -> &str {
             &self.app_name
         }
@@ -183,17 +180,18 @@ pub mod axum_impl {
     }
 }
 
-
 impl ShenyuClient {
-
-    pub async fn parse(path: &str, router: Box<dyn IRouter>, port: u16) -> Result<Self, String>
-    {
+    pub async fn parse(path: &str, router: Box<dyn IRouter>, port: u16) -> Result<Self, String> {
         let config = ShenYuConfig::from_yaml_file(path).unwrap();
         Self::from(config, router.app_name(), router.uri_infos(), port).await
     }
 
-    pub async fn from(config: ShenYuConfig, app_name: &str, uri_infos: &Vec<UriInfo>, port: u16) -> Result<Self, String>
-    {
+    pub async fn from(
+        config: ShenYuConfig,
+        app_name: &str,
+        uri_infos: &Vec<UriInfo>,
+        port: u16,
+    ) -> Result<Self, String> {
         Self::new(config, app_name, uri_infos, port).await
     }
 }
@@ -202,7 +200,6 @@ impl ShenyuClient {
 pub mod actix_web_impl {
     use super::model::UriInfo;
     use crate::IRouter;
-    use actix_web::{FromRequest, Handler, Responder};
 
     /// A router that can be used to register routes.
     ///
@@ -255,36 +252,14 @@ pub mod actix_web_impl {
             }
         }
 
-        pub fn route<F, Args>(mut self, path: &str) -> Self
-        where
-            F: Handler<Args>,
-            Args: FromRequest + 'static,
-            F::Output: Responder + 'static,
-        {
+        pub fn route(&mut self, path: &str) {
             self.uri_infos.push(UriInfo {
                 path: path.to_string().clone(),
                 rule_name: path.to_string().clone(),
                 service_name: None,
                 method_name: None,
             });
-            self
         }
-
-        pub fn service<F, Args>(mut self, path: &str) -> Self
-        where
-            F: Handler<Args>,
-            Args: FromRequest + 'static,
-            F::Output: Responder + 'static,
-        {
-            self.uri_infos.push(UriInfo {
-                path: path.to_string().clone(),
-                rule_name: path.to_string().clone(),
-                service_name: None,
-                method_name: None,
-            });
-            self
-        }
-
     }
 
     impl IRouter for ShenYuRouter {
@@ -301,7 +276,7 @@ pub mod actix_web_impl {
     macro_rules! shenyu_router {
         ($router:expr, $app:expr, $($path:expr => $method:ident($handler:expr))*) => {
             $(
-                $router = $router.route($path);
+                $router.route($path);
                 $app = $app.service(web::resource($path).route(web::$method().to($handler)));
             )*
         }
@@ -337,10 +312,18 @@ mod tests_axum {
         let mut hashmap = HashMap::new();
         hashmap.insert("username", "admin");
         hashmap.insert("password", "123456");
-        let params = [("userName", hashmap.get("username").clone()), ("password", hashmap.get("password").clone())];
+        let params = [
+            ("userName", hashmap.get("username").clone()),
+            ("password", hashmap.get("password").clone()),
+        ];
 
         // Fix the URL to include the scheme
-        let res = client.get("http://127.0.0.1:9095/platform/login").query(&params).send().await.unwrap();
+        let res = client
+            .get("http://127.0.0.1:9095/platform/login")
+            .query(&params)
+            .send()
+            .await
+            .unwrap();
         let res_data: Value = res.json().await.unwrap();
         print!("res_data: {:?}", res_data);
         print!("res_data:token {:?}", res_data["data"]["token"]);
@@ -356,7 +339,13 @@ mod tests_axum {
         let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527).await;
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
-        println!("client.token: {:?}", client.headers.get("X-Access-Token").unwrap_or(&"None".to_string()));
+        println!(
+            "client.token: {:?}",
+            client
+                .headers
+                .get("X-Access-Token")
+                .unwrap_or(&"None".to_string())
+        );
 
         let res = client.register_all_metadata(true).await;
         assert!(res.is_ok());
@@ -379,9 +368,7 @@ mod tests_axum {
         assert_eq!(uri_infos[0].path, "/health");
         assert_eq!(uri_infos[1].path, "/users");
     }
-
 }
-
 
 #[cfg(test)]
 #[cfg(feature = "actix-web")]
@@ -398,7 +385,13 @@ mod tests_actix_web {
         let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527).await;
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
-        println!("client.token: {:?}", client.headers.get("X-Access-Token").unwrap_or(&"None".to_string()));
+        println!(
+            "client.token: {:?}",
+            client
+                .headers
+                .get("X-Access-Token")
+                .unwrap_or(&"None".to_string())
+        );
 
         let res = client.register_all_metadata(true).await;
         assert!(res.is_ok());
@@ -418,5 +411,4 @@ mod tests_actix_web {
         assert_eq!(uri_infos[1].path, "/users");
         assert_eq!(uri_infos[2].path, "/index.html");
     }
-
 }

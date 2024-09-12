@@ -49,10 +49,28 @@ pub struct ShenyuClient {
 }
 
 impl ShenyuClient {
+    pub async fn register(&self) -> Result<(), Error> {
+        self.register_all_metadata(true)
+            .await
+            .expect("Failed to register metadata");
+        self.register_uri().await.expect("Failed to register URI");
+        self.register_discovery_config()
+            .await
+            .expect("Failed to register discovery config");
+        Ok(())
+    }
 
-    pub async fn new(config: ShenYuConfig, app_name: &str, uri_infos: &Vec<UriInfo>, port: u16) -> Result<Self, String> {
+    pub async fn new(
+        config: ShenYuConfig,
+        app_name: &str,
+        uri_infos: &Vec<UriInfo>,
+        port: u16,
+    ) -> Result<Self, String> {
         let mut headers = HashMap::new();
-        headers.insert("Content-Type".to_string(), "application/json;charset=UTF-8".to_string());
+        headers.insert(
+            "Content-Type".to_string(),
+            "application/json;charset=UTF-8".to_string(),
+        );
 
         let mut client = ShenyuClient {
             headers: HashMap::new(),
@@ -82,15 +100,40 @@ impl ShenyuClient {
 }
 
 impl ShenyuClient {
-    
     fn set_up_gateway_service_url(&mut self) -> Result<(), String> {
-        self.gateway_base_urls = self.env.register.servers.split(',').map(|s| s.to_string()).collect();
+        self.gateway_base_urls = self
+            .env
+            .register
+            .servers
+            .split(',')
+            .map(|s| s.to_string())
+            .collect();
 
-        self.register_meta_data_path_list = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, REGISTER_META_DATA_SUFFIX)).collect();
-        self.register_uri_list = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, REGISTER_URI_SUFFIX)).collect();
-        self.register_token_servers = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, PLATFORM_LOGIN_SUFFIX)).collect();
-        self.register_discover_config_servers = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, REGISTER_DISCOVERY_CONFIG_SUFFIX)).collect();
-        self.register_offline_servers = self.gateway_base_urls.iter().map(|url| format!("{}{}", url, REGISTER_OFFLINE_SUFFIX)).collect();
+        self.register_meta_data_path_list = self
+            .gateway_base_urls
+            .iter()
+            .map(|url| format!("{}{}", url, REGISTER_META_DATA_SUFFIX))
+            .collect();
+        self.register_uri_list = self
+            .gateway_base_urls
+            .iter()
+            .map(|url| format!("{}{}", url, REGISTER_URI_SUFFIX))
+            .collect();
+        self.register_token_servers = self
+            .gateway_base_urls
+            .iter()
+            .map(|url| format!("{}{}", url, PLATFORM_LOGIN_SUFFIX))
+            .collect();
+        self.register_discover_config_servers = self
+            .gateway_base_urls
+            .iter()
+            .map(|url| format!("{}{}", url, REGISTER_DISCOVERY_CONFIG_SUFFIX))
+            .collect();
+        self.register_offline_servers = self
+            .gateway_base_urls
+            .iter()
+            .map(|url| format!("{}{}", url, REGISTER_OFFLINE_SUFFIX))
+            .collect();
 
         let mut host = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
         #[cfg(not(target_os = "macos"))]
@@ -98,7 +141,7 @@ impl ShenyuClient {
             host = match local_ip() {
                 Ok(std::net::IpAddr::V4(ipv4)) => IpAddr::V4(ipv4),
                 Ok(std::net::IpAddr::V6(ipv6)) => IpAddr::from(ipv6.to_ipv4().unwrap()),
-                _ => todo!("Handle error")
+                _ => todo!("Handle error"),
             };
         }
         #[cfg(target_os = "macos")]
@@ -133,7 +176,10 @@ impl ShenyuClient {
         if msg == "success" {
             Ok(true)
         } else {
-            println!("Request ({}) failed, status code: {}, msg: {}", url, status_code, msg);
+            println!(
+                "Request ({}) failed, status code: {}, msg: {}",
+                url, status_code, msg
+            );
             Ok(false)
         }
     }
@@ -141,15 +187,20 @@ impl ShenyuClient {
     async fn get_register_token(&mut self) -> Result<String, Error> {
         let client = Client::new();
         let hashmap = &self.env.register.props;
-        let params = [("userName", hashmap.get("username").clone()), ("password", hashmap.get("password").clone())];
+        let params = [
+            ("userName", hashmap.get("username").clone()),
+            ("password", hashmap.get("password").clone()),
+        ];
 
         let result = Err(ShenYuError::new(500, "Can't get register token".to_string()).into());
         for url in &self.register_token_servers {
             let res: Response = client.get(url).query(&params).send().await.unwrap();
             let res_data: Value = res.json().await.unwrap();
-            match res_data.get("data")
+            match res_data
+                .get("data")
                 .and_then(|data| data.get("token"))
-                .and_then(|token| token.as_str()) {
+                .and_then(|token| token.as_str())
+            {
                 Some(token) => return Ok(token.to_string()),
                 None => continue,
             }
@@ -176,18 +227,29 @@ impl ShenyuClient {
 
         for url in &self.register_uri_list {
             if self.request(url, &json_data).await? {
-                println!("[SUCCESS], register uri success, register data: {:?}", json_data);
+                println!(
+                    "[SUCCESS], register uri success, register data: {:?}",
+                    json_data
+                );
                 return Ok(true);
             }
         }
 
-        println!("[ERROR], register uri failed, app_name: {}, host: {}, port: {}", app_name, host.clone().unwrap(), port);
+        println!(
+            "[ERROR], register uri failed, app_name: {}, host: {}, port: {}",
+            app_name,
+            host.clone().unwrap(),
+            port
+        );
         Ok(false)
     }
 
     pub async fn register_all_metadata(&self, enabled: bool) -> Result<bool, Error> {
         for x in self.uri_infos.iter() {
-            match self.register_metadata(false, Some(&x.path), Some(&x.rule_name), enabled).await {
+            match self
+                .register_metadata(false, Some(&x.path), Some(&x.rule_name), enabled)
+                .await
+            {
                 Ok(true) => continue,
                 Ok(false) => return Ok(false),
                 Err(e) => return Err(e),
@@ -196,7 +258,13 @@ impl ShenyuClient {
         Ok(true)
     }
 
-    async fn register_metadata(&self, register_all: bool, path: Option<&str>, rule_name: Option<&str>, enabled: bool) -> Result<bool, Error> {
+    async fn register_metadata(
+        &self,
+        register_all: bool,
+        path: Option<&str>,
+        rule_name: Option<&str>,
+        enabled: bool,
+    ) -> Result<bool, Error> {
         let context_path = &self.env.uri.context_path.clone();
         let app_name = &self.app_name.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
@@ -221,12 +289,18 @@ impl ShenyuClient {
 
         for url in &self.register_meta_data_path_list {
             if self.request(url, &json_data).await? {
-                println!("[SUCCESS], register metadata success, register data: {:?}", json_data);
+                println!(
+                    "[SUCCESS], register metadata success, register data: {:?}",
+                    json_data
+                );
                 return Ok(true);
             }
         }
 
-        println!("[ERROR], register metadata failed, app_name: {}, path: {}, contextPath: {}", app_name, path, context_path);
+        println!(
+            "[ERROR], register metadata failed, app_name: {}, path: {}, contextPath: {}",
+            app_name, path, context_path
+        );
         Ok(false)
     }
 
@@ -254,16 +328,24 @@ impl ShenyuClient {
 
         for url in &self.register_discover_config_servers {
             if self.request(url, &json_data).await? {
-                println!("[SUCCESS], register discover config success, register data: {:?}", json_data);
+                println!(
+                    "[SUCCESS], register discover config success, register data: {:?}",
+                    json_data
+                );
                 return Ok(true);
             }
         }
 
-        println!("[ERROR], register discover config failed, discovery_type: {}, host: {}, port: {}", discovery_type, host.clone().unwrap(), port);
+        println!(
+            "[ERROR], register discover config failed, discovery_type: {}, host: {}, port: {}",
+            discovery_type,
+            host.clone().unwrap(),
+            port
+        );
         Ok(false)
     }
 
-    pub async fn offline_register(&self){
+    pub async fn offline_register(&self) {
         let app_name = &self.app_name.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let context_path = &self.env.uri.context_path.clone();
@@ -282,13 +364,19 @@ impl ShenyuClient {
 
         for url in &self.register_offline_servers {
             if self.request(url, &json_data).await.unwrap() {
-                println!("[SUCCESS], register uri success, register data: {:?}", json_data);
+                println!(
+                    "[SUCCESS], register uri success, register data: {:?}",
+                    json_data
+                );
                 return;
             }
         }
 
-        println!("[ERROR], register uri failed, app_name: {}, host: {}, port: {}", app_name, host.clone().unwrap(), port);
+        println!(
+            "[ERROR], register uri failed, app_name: {}, host: {}, port: {}",
+            app_name,
+            host.clone().unwrap(),
+            port
+        );
     }
-
-
 }

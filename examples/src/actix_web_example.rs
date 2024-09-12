@@ -16,12 +16,14 @@
 // under the License.
 
 #![cfg(feature = "actix-web")]
-
 use actix_web::rt::signal;
 use actix_web::{middleware, web, App, HttpServer, Responder};
 use shenyu_client_rust::actix_web_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
 use shenyu_client_rust::{core::ShenyuClient, shenyu_router, IRouter};
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex};
+use tokio::time::sleep;
 
 async fn health_handler() -> impl Responder {
     "OK"
@@ -37,36 +39,55 @@ async fn index() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let mut router = ShenYuRouter::new("shenyu_client_app");
+    let router_arc = Arc::new(Mutex::new(ShenYuRouter::new("shenyu_client_app")));
     let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
 
+    let client = {
+        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+        let binding = Arc::clone(&router_arc);
+        let router_clone = binding.lock().unwrap();
+        let res = ShenyuClient::from(
+            config,
+            router_clone.app_name(),
+            router_clone.uri_infos(),
+            4000,
+        )
+        .await;
+        let client = res.unwrap();
+        client
+    };
+    let b_client = &Box::new(client);
+
+    let binding = Arc::clone(&router_arc);
     let server = HttpServer::new(move || {
-            let app = App::new().wrap(middleware::Logger::default());
-            shenyu_router!(
-                router,
-                app,
-                "/health" => get(health_handler)
-                "/create_user" => post(create_user_handler)
-                "/" => get(index)
-            );
-            app
-        })
-        .bind(("127.0.0.1", 8080))?
-        .run();
-    let res = ShenyuClient::from(config, router.app_name(), router.uri_infos(), 9527).await;
+        let mut router_clone = binding.lock().unwrap();
+        let mut app = App::new().wrap(middleware::Logger::default());
+        let router_clone = router_clone.deref_mut();
+        shenyu_router!(
+            router_clone,
+            app,
+            "/health" => get(health_handler)
+            "/create_user" => post(create_user_handler)
+            "/" => get(index)
+        );
 
+        app
+    })
+    .bind(("127.0.0.1", 4000))
+    .expect("Can not bind to 4000")
+    .run();
 
-    let client = &mut res.unwrap();
-    client.register_all_metadata(true).await.expect("Failed to register metadata");
-    client.register_uri().await.expect("Failed to register URI");
-    client.register_discovery_config().await.expect("Failed to register discovery config");
+    sleep(std::time::Duration::from_secs(10)).await;
+    b_client.register().await.expect("Failed to register");
+
+    server.await.expect("Failed to start server");
 
     // Add shutdown hook
     tokio::select! {
-        _ = server => {Ok(())},
         _ = signal::ctrl_c() => {
-            let _ = client.offline_register().await;
-            Ok(())
+            let _ = b_client.offline_register().await;
         }
     }
+
+    Ok(())
 }
