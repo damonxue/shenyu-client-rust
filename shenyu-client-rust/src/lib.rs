@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-//! Rust client sdk of Apache ShenYu.
+//! Rust shenyu-client-rust sdk of Apache ShenYu.
 
 use crate::model::UriInfo;
 
@@ -340,7 +340,7 @@ mod tests_axum {
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
         println!(
-            "client.token: {:?}",
+            "shenyu-client-rust.token: {:?}",
             client
                 .headers
                 .get("X-Access-Token")
@@ -386,7 +386,7 @@ mod tests_actix_web {
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
         println!(
-            "client.token: {:?}",
+            "shenyu-client-rust.token: {:?}",
             client
                 .headers
                 .get("X-Access-Token")

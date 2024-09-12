@@ -16,6 +16,7 @@
 # under the License.
 
 [workspace.package]
+name = "shenyu-client-rust"
 version = "0.1.0"
 edition = "2021"
 homepage = "https://shenyu.apache.org"
@@ -27,11 +28,12 @@ description = "Apache ShenYu Rust client SDK."
 repository = "https://github.com/apache/shenyu-rust-client"
 keywords = ["shenyu", "client", "sdk", "rust", "apache"]
 license = "Apache-2.0"
+readme = "README.md"
 
 [workspace]
 resolver = "2"
 members = [
-    "client",
+    "shenyu-client-rust",
     "examples"
 ]
 

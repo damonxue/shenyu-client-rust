@@ -25,10 +25,10 @@ use std::collections::HashMap;
 use std::io::Error;
 use std::net::{IpAddr, Ipv4Addr};
 
-pub const REGISTER_META_DATA_SUFFIX: &str = "/shenyu-client/register-metadata";
-pub const REGISTER_URI_SUFFIX: &str = "/shenyu-client/register-uri";
-pub const REGISTER_DISCOVERY_CONFIG_SUFFIX: &str = "/shenyu-client/register-discoveryConfig";
-pub const REGISTER_OFFLINE_SUFFIX: &str = "/shenyu-client/offline";
+pub const REGISTER_META_DATA_SUFFIX: &str = "/shenyu-shenyu-client-rust/register-metadata";
+pub const REGISTER_URI_SUFFIX: &str = "/shenyu-shenyu-client-rust/register-uri";
+pub const REGISTER_DISCOVERY_CONFIG_SUFFIX: &str = "/shenyu-shenyu-client-rust/register-discoveryConfig";
+pub const REGISTER_OFFLINE_SUFFIX: &str = "/shenyu-shenyu-client-rust/offline";
 pub const PLATFORM_LOGIN_SUFFIX: &str = "/platform/login";
 
 #[derive(Debug)]
