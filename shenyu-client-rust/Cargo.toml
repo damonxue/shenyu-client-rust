@@ -28,6 +28,7 @@ description = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
 keywords = ["shenyu"]
+readme = "../README.md"
 
 [features]
 default = []
