@@ -51,8 +51,4 @@ shenyu-client-rust = { path = "../shenyu-client-rust", version = "0.1.1", featur
 # http micro services need.
 axum = { version = "0.7.5", optional = true }
 actix-web = { version = "4.9.0", optional = true }
-
-# grpc micro services need.
-tonic = { version = "0.12.1" }
-prost = { version = "0.13.1" }
-tokio = { version = "1.38.0", features = ["full"] }
+tokio = "1.39.3"

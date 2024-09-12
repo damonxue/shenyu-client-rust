@@ -38,20 +38,12 @@ async fn main() {
         .route("/health", get(health_handler))
         .route("/users", post(create_user_handler));
     let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
-    let client = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527)
+    let client = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 3000)
         .await
         .unwrap();
 
     let axum_app: Router = app.into();
-    client
-        .register_all_metadata(true)
-        .await
-        .expect("TODO: panic message");
-    client.register_uri().await.expect("TODO: panic message");
-    client
-        .register_discovery_config()
-        .await
-        .expect("TODO: panic message");
+    client.register().await.expect("TODO: panic message");
 
     // Start Axum server
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
