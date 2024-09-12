@@ -17,7 +17,7 @@
 
 [workspace.package]
 name = "shenyu-client-rust"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 homepage = "https://shenyu.apache.org"
 rust-version = "1.71.0"
