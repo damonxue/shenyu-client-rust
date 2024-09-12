@@ -42,6 +42,6 @@ jobs:
         run: cargo test --verbose --all-features --lib
 
       - name: Run axum_example and actix_web_example
-        run: cargo run --package examples --bin axum_example
-             cargo run --package examples --bin actix_web_example
+        run: cargo run --package examples --all-features --bin axum_example
+             cargo run --package examples --all-features --bin actix_web_example
 
