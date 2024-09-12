@@ -43,6 +43,6 @@ jobs:
 
       - name: Run axum_example and actix_web_example
         run: |
-          timeout 2m cargo run --package examples --all-features --bin axum_example || true
-          timeout 2m cargo run --package examples --all-features --bin actix_web_example || true
+          timeout 30s cargo run --package examples --all-features --bin axum_example || true
+          timeout 30s cargo run --package examples --all-features --bin actix_web_example || true
 
