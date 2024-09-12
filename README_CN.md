@@ -1,10 +1,10 @@
-# Apache ShenYu-Client-Rust ShenYu-rust客户端
+# Apache ShenYu-Client-Rust ShenYu-Rust客户端
 
-Apache ShenYu Rust 客户端 SDK 是一个用于与 Apache ShenYu 网关交互的 Rust 库。此 SDK 允许您轻松地将 Rust 应用程序与 ShenYu 网关集成，提供一种无缝的方式来管理和路由 API 请求。
+Apache ShenYu Rust客户端SDK是一个用于与Apache ShenYu网关交互的Rust库。此SDK允许您轻松地将Rust应用程序与ShenYu网关集成，提供一种无缝的方式来管理和路由API请求。
 
 ## 安装
 
-要在项目中使用 Apache ShenYu Rust 客户端 SDK，请在 `Cargo.toml` 文件中添加以下依赖项：
+要在项目中使用Apache ShenYu Rust客户端SDK，请在`Cargo.toml`文件中添加以下依赖项：
 
 ```toml
 [dependencies]
@@ -17,16 +17,19 @@ tokio = { version = "1", features = ["full"] }
 
 ## 使用
 
-下面是一个如何使用 ShenYuRouter 创建 Axum 服务并将其与 ShenYu 网关集成的示例。
+下面是一个如何使用`ShenYuRouter`创建Axum服务并将其与ShenYu网关集成的示例。
 
 ### 示例
 
 ```rust
+
+#![cfg(feature = "axum")]
+use axum::routing::post;
 use axum::{routing::get, Router};
-use reqwest::Client;
-use serde_json::Value;
-use std::collections::HashMap;
-use tokio::runtime::Runtime;
+use shenyu_client_rust::axum_impl::ShenYuRouter;
+use shenyu_client_rust::config::ShenYuConfig;
+use shenyu_client_rust::{core::ShenyuClient, IRouter};
+use tokio::signal;
 
 async fn health_handler() -> &'static str {
     "OK"
@@ -41,24 +44,38 @@ async fn main() {
     let app = ShenYuRouter::<()>::new("shenyu_client_app")
         .nest("/api", ShenYuRouter::new("api"))
         .route("/health", get(health_handler))
-        .route("/users", axum::routing::post(create_user_handler))
-        .build();
+        .route("/users", post(create_user_handler));
+    let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
+    let client = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527)
+        .await
+        .unwrap();
 
-    let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
-    let res = ShenyuClient::from(config, app, 9527).await;
-    assert!(res.is_ok());
-    let client = &mut res.unwrap();
-    println!("client.token: {:?}", client.headers.get("X-Access-Token").unwrap_or(&"None".to_string()));
+    let axum_app: Router = app.into();
+    client
+        .register_all_metadata(true)
+        .await
+        .expect("TODO: panic message");
+    client.register_uri().await.expect("TODO: panic message");
+    client
+        .register_discovery_config()
+        .await
+        .expect("TODO: panic message");
 
-    let res = client.register_all_metadata(true).await;
-    assert!(res.is_ok());
-    let res = client.register_uri().await;
-    assert!(res.is_ok());
+    // Start Axum server
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, axum_app)
+        .with_graceful_shutdown(async move {
+            signal::ctrl_c().await.expect("failed to listen for event");
+            client.offline_register().await;
+        })
+        .await
+        .unwrap();
 }
+
 ```
 
-此示例演示了如何使用 ShenYuRouter 设置基本的 Axum 服务并将其注册到 ShenYu 网关。`health_handler` 和 `create_user_handler` 是处理 HTTP 请求的简单异步函数。
+此示例演示了如何使用`ShenYuRouter`设置基本的Axum服务并将其注册到ShenYu网关。`health_handler`和`create_user_handler`是处理HTTP请求的简单异步函数。
 
 ## 许可证
 
-此项目根据 Apache 许可证 2.0 版获得许可。有关更多详细信息，请参阅 [LICENSE](LICENSE) 文件。
+此项目根据Apache许可证2.0版获得许可。有关更多详细信息，请参阅[LICENSE](LICENSE)文件。

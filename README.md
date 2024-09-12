@@ -17,17 +17,19 @@ tokio = { version = "1", features = ["full"] }
 
 ## Usage
 
-Below is an example of how to create an Axum service using the ShenYuRouter and integrate it with the ShenYu gateway.
+Below is an example of how to create an Axum service using `ShenYuRouter` and integrate it with the ShenYu Gateway.
 
 ### Example
 
 ```rust
-use axum::{routing::get, Router};
-use reqwest::Client;
-use serde_json::Value;
-use std::collections::HashMap;
-use tokio::runtime::Runtime;
 
+#![cfg(feature = "axum")]
+use axum::routing::post;
+use axum::{routing::get, Router};
+use shenyu_client_rust::axum_impl::ShenYuRouter;
+use shenyu_client_rust::config::ShenYuConfig;
+use shenyu_client_rust::{core::ShenyuClient, IRouter};
+use tokio::signal;
 
 async fn health_handler() -> &'static str {
     "OK"
@@ -42,24 +44,38 @@ async fn main() {
     let app = ShenYuRouter::<()>::new("shenyu_client_app")
         .nest("/api", ShenYuRouter::new("api"))
         .route("/health", get(health_handler))
-        .route("/users", axum::routing::post(create_user_handler))
-        .build();
+        .route("/users", post(create_user_handler));
+    let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
+    let client = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527)
+        .await
+        .unwrap();
 
-    let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
-    let res = ShenyuClient::from(config, app, 9527).await;
-    assert!(res.is_ok());
-    let client = &mut res.unwrap();
-    println!("client.token: {:?}", client.headers.get("X-Access-Token").unwrap_or(&"None".to_string()));
+    let axum_app: Router = app.into();
+    client
+        .register_all_metadata(true)
+        .await
+        .expect("TODO: panic message");
+    client.register_uri().await.expect("TODO: panic message");
+    client
+        .register_discovery_config()
+        .await
+        .expect("TODO: panic message");
 
-    let res = client.register_all_metadata(true).await;
-    assert!(res.is_ok());
-    let res = client.register_uri().await;
-    assert!(res.is_ok());
+    // Start Axum server
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, axum_app)
+        .with_graceful_shutdown(async move {
+            signal::ctrl_c().await.expect("failed to listen for event");
+            client.offline_register().await;
+        })
+        .await
+        .unwrap();
 }
+
 ```
 
-This example demonstrates how to set up a basic Axum service with the ShenYuRouter and register it with the ShenYu gateway. The `health_handler` and `create_user_handler` are simple async functions that handle HTTP requests.
+This example demonstrates how to set up a basic Axum service using `ShenYuRouter` and register it with the ShenYu Gateway. `health_handler` and `create_user_handler` are simple asynchronous functions that handle HTTP requests.
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0. See the [LICENSE](LICENSE) file for more details.
+This project is licensed under the Apache License 2.0. For more details, see the [LICENSE](LICENSE) file.
