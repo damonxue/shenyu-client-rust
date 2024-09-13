@@ -160,12 +160,12 @@ pub mod axum_impl {
         }
     }
 
-    impl<S> Into<Router<S>> for ShenYuRouter<S>
+    impl<S> From<ShenYuRouter<S>> for Router<S>
     where
         S: Clone + Send + Sync + 'static,
     {
-        fn into(self) -> Router<S> {
-            self.inner
+        fn from(val: ShenYuRouter<S>) -> Self {
+            val.inner
         }
     }
 
@@ -181,18 +181,18 @@ pub mod axum_impl {
 }
 
 impl ShenyuClient {
-    pub async fn parse(path: &str, router: Box<dyn IRouter>, port: u16) -> Result<Self, String> {
+    pub fn parse(path: &str, router: Box<dyn IRouter>, port: u16) -> Result<Self, String> {
         let config = ShenYuConfig::from_yaml_file(path).unwrap();
-        Self::from(config, router.app_name(), router.uri_infos(), port).await
+        Self::from(config, router.app_name(), router.uri_infos(), port)
     }
 
-    pub async fn from(
+    pub fn from(
         config: ShenYuConfig,
         app_name: &str,
-        uri_infos: &Vec<UriInfo>,
+        uri_infos: &[UriInfo],
         port: u16,
     ) -> Result<Self, String> {
-        Self::new(config, app_name, uri_infos, port).await
+        Self::new(config, app_name, uri_infos, port)
     }
 }
 
