@@ -43,7 +43,7 @@ async fn main() -> std::io::Result<()> {
     let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
 
     let client = {
-        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+        sleep(std::time::Duration::from_secs(10)).await;
         let binding = Arc::clone(&router_arc);
         let router_clone = binding.lock().unwrap();
         let res = ShenyuClient::from(
@@ -51,12 +51,10 @@ async fn main() -> std::io::Result<()> {
             router_clone.app_name(),
             router_clone.uri_infos(),
             4000,
-        )
-        .await;
+        );
         let client = res.unwrap();
         client
     };
-    let b_client = &Box::new(client);
 
     let binding = Arc::clone(&router_arc);
     let server = HttpServer::new(move || {
@@ -78,14 +76,14 @@ async fn main() -> std::io::Result<()> {
     .run();
 
     sleep(std::time::Duration::from_secs(10)).await;
-    b_client.register().await.expect("Failed to register");
+    client.register().await.expect("Failed to register");
 
     server.await.expect("Failed to start server");
 
     // Add shutdown hook
     tokio::select! {
         _ = signal::ctrl_c() => {
-            let _ = b_client.offline_register().await;
+            client.offline_register().await;
         }
     }
 

@@ -160,12 +160,12 @@ pub mod axum_impl {
         }
     }
 
-    impl<S> Into<Router<S>> for ShenYuRouter<S>
+    impl<S> From<ShenYuRouter<S>> for Router<S>
     where
         S: Clone + Send + Sync + 'static,
     {
-        fn into(self) -> Router<S> {
-            self.inner
+        fn from(val: ShenYuRouter<S>) -> Self {
+            val.inner
         }
     }
 
@@ -181,18 +181,18 @@ pub mod axum_impl {
 }
 
 impl ShenyuClient {
-    pub async fn parse(path: &str, router: Box<dyn IRouter>, port: u16) -> Result<Self, String> {
+    pub fn parse(path: &str, router: Box<dyn IRouter>, port: u16) -> Result<Self, String> {
         let config = ShenYuConfig::from_yaml_file(path).unwrap();
-        Self::from(config, router.app_name(), router.uri_infos(), port).await
+        Self::from(config, router.app_name(), router.uri_infos(), port)
     }
 
-    pub async fn from(
+    pub fn from(
         config: ShenYuConfig,
         app_name: &str,
-        uri_infos: &Vec<UriInfo>,
+        uri_infos: &[UriInfo],
         port: u16,
     ) -> Result<Self, String> {
-        Self::new(config, app_name, uri_infos, port).await
+        Self::new(config, app_name, uri_infos, port)
     }
 }
 
@@ -336,7 +336,7 @@ mod tests_axum {
             .route("/health", get(health_handler))
             .route("/users", post(create_user_handler));
         let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
-        let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527).await;
+        let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527);
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
         println!(
@@ -344,7 +344,8 @@ mod tests_axum {
             client
                 .headers
                 .get("X-Access-Token")
-                .unwrap_or(&"None".to_string())
+                .map(|r| r.clone())
+                .unwrap_or("None".to_string())
         );
 
         let res = client.register_all_metadata(true).await;
@@ -382,7 +383,7 @@ mod tests_actix_web {
     async fn build_client() {
         let app = ShenYuRouter::new("shenyu_client_app");
         let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
-        let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527).await;
+        let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527);
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
         println!(
@@ -390,7 +391,8 @@ mod tests_actix_web {
             client
                 .headers
                 .get("X-Access-Token")
-                .unwrap_or(&"None".to_string())
+                .map(|r| r.clone())
+                .unwrap_or("None".to_string())
         );
 
         let res = client.register_all_metadata(true).await;

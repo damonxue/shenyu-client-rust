@@ -19,7 +19,6 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -37,6 +36,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build
         run: cargo build --verbose --all-features
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
 
       - name: Run tests
         run: cargo test --verbose --all-features --lib

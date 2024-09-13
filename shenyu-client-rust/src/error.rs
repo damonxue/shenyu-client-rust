@@ -29,8 +29,8 @@ impl ShenYuError {
     }
 }
 
-impl Into<Error> for ShenYuError {
-    fn into(self) -> Error {
-        Error::new(std::io::ErrorKind::Other, self.message)
+impl From<ShenYuError> for Error {
+    fn from(val: ShenYuError) -> Self {
+        Error::new(std::io::ErrorKind::Other, val.message)
     }
 }
