@@ -336,7 +336,7 @@ mod tests_axum {
             .route("/health", get(health_handler))
             .route("/users", post(create_user_handler));
         let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
-        let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527).await;
+        let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527);
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
         println!(
@@ -344,7 +344,8 @@ mod tests_axum {
             client
                 .headers
                 .get("X-Access-Token")
-                .unwrap_or(&"None".to_string())
+                .map(|r| r.clone())
+                .unwrap_or("None".to_string())
         );
 
         let res = client.register_all_metadata(true).await;
@@ -382,7 +383,7 @@ mod tests_actix_web {
     async fn build_client() {
         let app = ShenYuRouter::new("shenyu_client_app");
         let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
-        let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527).await;
+        let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527);
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
         println!(
@@ -390,7 +391,8 @@ mod tests_actix_web {
             client
                 .headers
                 .get("X-Access-Token")
-                .unwrap_or(&"None".to_string())
+                .map(|r| r.clone())
+                .unwrap_or("None".to_string())
         );
 
         let res = client.register_all_metadata(true).await;

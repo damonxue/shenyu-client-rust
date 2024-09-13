@@ -17,6 +17,7 @@ name: ShenYu Client Rust CI
 
 on:
   push:
+    branches: [ "main" ]
   pull_request:
 
 env:
