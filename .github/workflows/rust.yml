@@ -25,7 +25,7 @@ env:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 3.5
     services:
       shenyu-admin:
         image: apache/shenyu-admin:latest
@@ -47,7 +47,6 @@ jobs:
 
       - name: Run axum_example
         run: timeout 10s cargo run --package examples --all-features --bin axum_example || true
+
       - name: Run actix_web_example
-        run: timeout 25s cargo run --package examples --all-features --bin actix_web_example > /dev/null 2>&1 || true
-
-
+        run: timeout 25s cargo run --package examples --all-features --bin actix_web_example || true
