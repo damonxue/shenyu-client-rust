@@ -75,7 +75,6 @@ async fn main() -> std::io::Result<()> {
     .expect("Can not bind to 4000")
     .run();
 
-    sleep(std::time::Duration::from_secs(10)).await;
     client.register().await.expect("Failed to register");
 
     server.await.expect("Failed to start server");
