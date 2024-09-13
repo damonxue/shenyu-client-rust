@@ -23,7 +23,6 @@ use shenyu_client_rust::config::ShenYuConfig;
 use shenyu_client_rust::{core::ShenyuClient, shenyu_router, IRouter};
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
-use tokio::time::sleep;
 
 async fn health_handler() -> impl Responder {
     "OK"
@@ -43,7 +42,6 @@ async fn main() -> std::io::Result<()> {
     let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
 
     let client = {
-        sleep(std::time::Duration::from_secs(10)).await;
         let binding = Arc::clone(&router_arc);
         let router_clone = binding.lock().unwrap();
         let res = ShenyuClient::from(
