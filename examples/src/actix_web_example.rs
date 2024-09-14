@@ -75,14 +75,12 @@ async fn main() -> std::io::Result<()> {
 
     client.register().await.expect("Failed to register");
 
-    server.await.expect("Failed to start server");
-
     // Add shutdown hook
     tokio::select! {
+        _ = server => Ok(()),
         _ = signal::ctrl_c() => {
             client.offline_register().await;
+            Ok(())
         }
     }
-
-    Ok(())
 }
