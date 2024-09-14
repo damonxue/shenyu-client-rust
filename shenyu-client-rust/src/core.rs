@@ -244,7 +244,13 @@ impl ShenyuClient {
     pub async fn register_all_metadata(&self, enabled: bool) -> Result<bool, Error> {
         for x in self.uri_infos.iter() {
             match self
-                .register_metadata(false, Some(&x.path), Some(&x.method_name), Some(&x.rule_name), enabled)
+                .register_metadata(
+                    false,
+                    Some(&x.path),
+                    Some(&x.method_name),
+                    Some(&x.rule_name),
+                    enabled,
+                )
                 .await
             {
                 Ok(true) => continue,

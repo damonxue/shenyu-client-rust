@@ -332,7 +332,7 @@ mod tests_axum {
     #[tokio::test]
     async fn build_client() {
         let app = ShenYuRouter::<()>::new("shenyu_client_app")
-            .nest("/api",ShenYuRouter::new("api"))
+            .nest("/api", ShenYuRouter::new("api"))
             .route("/health", "get", get(health_handler))
             .route("/users", "post", post(create_user_handler));
         let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
