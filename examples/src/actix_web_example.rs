@@ -69,7 +69,7 @@ async fn main() -> std::io::Result<()> {
 
         app
     })
-    .bind(("127.0.0.1", 4000))
+    .bind(("0.0.0.0", 4000))
     .expect("Can not bind to 4000")
     .run();
 

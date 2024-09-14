@@ -92,18 +92,18 @@ pub mod axum_impl {
             self
         }
 
-        pub fn route(mut self, path: &str, method_router: MethodRouter<S>) -> Self {
+        pub fn route(mut self, path: &str, method: &str, method_router: MethodRouter<S>) -> Self {
             self.inner = self.inner.route(path, method_router);
             self.uri_infos.push(UriInfo {
                 path: path.to_string(),
                 rule_name: path.to_string(),
                 service_name: None,
-                method_name: None,
+                method_name: method.to_string(),
             });
             self
         }
 
-        pub fn route_service<T>(mut self, path: &str, service: T) -> Self
+        pub fn route_service<T>(mut self, path: &str, method: &str, service: T) -> Self
         where
             T: Service<Request, Error = Infallible> + Clone + Send + 'static,
             T::Response: IntoResponse,
@@ -114,7 +114,7 @@ pub mod axum_impl {
                 path: path.to_string(),
                 rule_name: path.to_string(),
                 service_name: None,
-                method_name: None,
+                method_name: method.to_string(),
             });
             self
         }
@@ -127,7 +127,7 @@ pub mod axum_impl {
         }
 
         #[track_caller]
-        pub fn nest_service<T>(mut self, path: &str, service: T) -> Self
+        pub fn nest_service<T>(mut self, path: &str, method: &str, service: T) -> Self
         where
             T: Service<Request, Error = Infallible> + Clone + Send + 'static,
             T::Response: IntoResponse,
@@ -138,7 +138,7 @@ pub mod axum_impl {
                 path: path.to_string(),
                 rule_name: path.to_string(),
                 service_name: None,
-                method_name: None,
+                method_name: method.to_string(),
             });
             self
         }
@@ -252,12 +252,12 @@ pub mod actix_web_impl {
             }
         }
 
-        pub fn route(&mut self, path: &str) {
+        pub fn route(&mut self, path: &str, method: &str) {
             self.uri_infos.push(UriInfo {
                 path: path.to_string().clone(),
                 rule_name: path.to_string().clone(),
                 service_name: None,
-                method_name: None,
+                method_name: method.to_string(),
             });
         }
     }
@@ -276,7 +276,7 @@ pub mod actix_web_impl {
     macro_rules! shenyu_router {
         ($router:expr, $app:expr, $($path:expr => $method:ident($handler:expr))*) => {
             $(
-                $router.route($path);
+                $router.route($path, stringify!($method));
                 $app = $app.service(web::resource($path).route(web::$method().to($handler)));
             )*
         }
@@ -332,9 +332,9 @@ mod tests_axum {
     #[tokio::test]
     async fn build_client() {
         let app = ShenYuRouter::<()>::new("shenyu_client_app")
-            .nest("/api", ShenYuRouter::new("api"))
-            .route("/health", get(health_handler))
-            .route("/users", post(create_user_handler));
+            .nest("/api",ShenYuRouter::new("api"))
+            .route("/health", "get", get(health_handler))
+            .route("/users", "post", post(create_user_handler));
         let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
         let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527);
         assert!(&res.is_ok());

@@ -244,7 +244,7 @@ impl ShenyuClient {
     pub async fn register_all_metadata(&self, enabled: bool) -> Result<bool, Error> {
         for x in self.uri_infos.iter() {
             match self
-                .register_metadata(false, Some(&x.path), Some(&x.rule_name), enabled)
+                .register_metadata(false, Some(&x.path), Some(&x.method_name), Some(&x.rule_name), enabled)
                 .await
             {
                 Ok(true) => continue,
@@ -259,6 +259,7 @@ impl ShenyuClient {
         &self,
         register_all: bool,
         path: Option<&str>,
+        method: Option<&str>,
         rule_name: Option<&str>,
         enabled: bool,
     ) -> Result<bool, Error> {
@@ -275,10 +276,16 @@ impl ShenyuClient {
         let json_data = serde_json::json!({
             "appName": app_name.clone(),
             "contextPath": context_path.clone(),
-            "path": context_path.clone() + &*path.clone(),
+            "path": context_path.clone() + path.as_str(),
             "pathDesc": "",
             "rpcType": rpc_type,
-            "ruleName": rule_name,
+            "ruleName": context_path.clone() + rule_name.as_str(),
+            "serviceName": app_name.clone(),
+            "methodName": method.unwrap_or("").to_string(),
+            "parameterTypes": "",
+            "rpcExt": "",
+            "host": self.host.clone().unwrap(),
+            "port": self.port,
             "enabled": enabled,
             "registerMetaData": "",
             "pluginNames": []

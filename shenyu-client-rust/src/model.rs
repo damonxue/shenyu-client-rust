@@ -44,7 +44,7 @@ pub struct UriInfo {
     pub path: String,
     pub rule_name: String,
     pub service_name: Option<String>,
-    pub method_name: Option<String>,
+    pub method_name: String,
 }
 
 pub enum EventType {
