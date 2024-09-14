@@ -362,8 +362,8 @@ mod tests_axum {
         let binding = ShenYuRouter::<()>::new("shenyu_client_app");
         let app = binding
             .nest("/api", ShenYuRouter::new("api"))
-            .route("/health", get(health_handler))
-            .route("/users", post(create_user_handler));
+            .route("/health", "get", get(health_handler))
+            .route("/users", "post", post(create_user_handler));
         let uri_infos = app.uri_infos();
         assert_eq!(uri_infos.len(), 2);
         assert_eq!(uri_infos[0].path, "/health");
