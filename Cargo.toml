@@ -25,7 +25,7 @@ authors = ["The Apache ShenYu Team"]
 
 categories = ["api-bindings", "network-programming", "web-programming", "asynchronous"]
 description = "Apache ShenYu Rust client SDK."
-repository = "https://github.com/apache/shenyu-rust-client"
+repository = "https://github.com/apache/shenyu-client-rust"
 keywords = ["shenyu", "client", "sdk", "rust", "apache"]
 license = "Apache-2.0"
 readme = "README.md"
