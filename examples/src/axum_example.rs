@@ -41,14 +41,14 @@ async fn main() {
     let client = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 3000).unwrap();
 
     let axum_app: Router = app.into();
-    client.register().await.expect("TODO: panic message");
+    client.register().expect("TODO: panic message");
 
     // Start Axum server
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, axum_app)
         .with_graceful_shutdown(async move {
             signal::ctrl_c().await.expect("failed to listen for event");
-            client.offline_register().await;
+            client.offline_register();
         })
         .await
         .unwrap();

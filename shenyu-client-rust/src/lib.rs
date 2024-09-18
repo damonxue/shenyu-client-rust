@@ -47,7 +47,8 @@ pub mod axum_impl {
     /// This is a wrapper around [`Router`] that provides a more ergonomic API.
     /// ```rust
     ///
-    /// use axum::routing::{get, post};///
+    /// use axum::routing::{get, post};
+    /// use shenyu_client_rust::axum_impl::ShenYuRouter;
     ///
     /// async fn health_handler() -> &'static str {
     ///     "OK"
@@ -207,11 +208,9 @@ pub mod actix_web_impl {
     /// ```rust
     ///
     /// use actix_web::{web, get, post, App};
-    /// use client::config::ShenYuConfig;    ///
-    ///
-    ///
-    ///
-    /// use client::core::ShenyuClient;
+    /// use shenyu_client_rust::actix_web_impl::ShenYuRouter;
+    /// use shenyu_client_rust::config::ShenYuConfig;
+    /// use shenyu_client_rust::core::ShenyuClient;
     ///
     /// async fn health_handler() -> &'static str {
     ///     "OK"
@@ -230,8 +229,8 @@ pub mod actix_web_impl {
     ///     .route("/users", web::post(), create_user_handler)
     ///     .service("/index.html", web::get(), index);
     /// let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
-    /// let res = ShenyuClient::from(config, router.app_name(), router.uri_infos(), 9527).await;
-    /// res.unwrap().init().await;
+    /// let res = ShenyuClient::from(config, router.app_name(), router.uri_infos(), 9527);
+    /// res.unwrap();
     /// let resouces = router.resources();
     /// let app = App::new().service(resouces);
     /// // then app is same as actix_web::App
@@ -277,7 +276,7 @@ pub mod actix_web_impl {
         ($router:expr, $app:expr, $($path:expr => $method:ident($handler:expr))*) => {
             $(
                 $router.route($path, stringify!($method));
-                $app = $app.service(web::resource($path).route(web::$method().to($handler)));
+                $app = $app.service(actix_web::web::resource($path).route(actix_web::web::$method().to($handler)));
             )*
         }
     }
@@ -294,7 +293,6 @@ mod tests_axum {
     use crate::core::ShenyuClient;
     use crate::IRouter;
     use axum::routing::{get, post};
-    use reqwest::Client;
     use serde_json::Value;
     use std::collections::HashMap;
 
@@ -308,23 +306,20 @@ mod tests_axum {
 
     #[tokio::test]
     async fn test_login() {
-        let client = Client::new();
         let mut hashmap = HashMap::new();
         hashmap.insert("username", "admin");
         hashmap.insert("password", "123456");
         let params = [
-            ("userName", hashmap.get("username").clone()),
-            ("password", hashmap.get("password").clone()),
+            ("userName", hashmap.get("username").copied().unwrap()),
+            ("password", hashmap.get("password").copied().unwrap()),
         ];
 
         // Fix the URL to include the scheme
-        let res = client
-            .get("http://127.0.0.1:9095/platform/login")
-            .query(&params)
-            .send()
-            .await
+        let res = ureq::get("http://127.0.0.1:9095/platform/login")
+            .query_pairs(params)
+            .call()
             .unwrap();
-        let res_data: Value = res.json().await.unwrap();
+        let res_data: Value = res.into_json().unwrap();
         print!("res_data: {:?}", res_data);
         print!("res_data:token {:?}", res_data["data"]["token"]);
     }
@@ -348,13 +343,20 @@ mod tests_axum {
                 .unwrap_or("None".to_string())
         );
 
-        let res = client.register_all_metadata(true).await;
+        if let Ok(token) = client.get_register_token() {
+            client
+                .headers
+                .insert("X-Access-Token".to_string(), token.to_string());
+        } else {
+            panic!("Can't get register token");
+        }
+        let res = client.register_all_metadata(true);
         assert!(res.is_ok());
-        let res = client.register_uri().await;
+        let res = client.register_uri();
         assert!(res.is_ok());
-        let res = client.register_discovery_config().await;
+        let res = client.register_discovery_config();
         assert!(res.is_ok());
-        client.offline_register().await;
+        client.offline_register();
     }
 
     #[test]
@@ -395,12 +397,19 @@ mod tests_actix_web {
                 .unwrap_or("None".to_string())
         );
 
-        let res = client.register_all_metadata(true).await;
+        if let Ok(token) = client.get_register_token() {
+            client
+                .headers
+                .insert("X-Access-Token".to_string(), token.to_string());
+        } else {
+            panic!("Can't get register token");
+        }
+        let res = client.register_all_metadata(true);
         assert!(res.is_ok());
-        let res = client.register_uri().await;
+        let res = client.register_uri();
         assert!(res.is_ok());
-        let res = client.register_discovery_config().await;
+        let res = client.register_discovery_config();
         assert!(res.is_ok());
-        client.offline_register().await;
+        client.offline_register();
     }
 }
