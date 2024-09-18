@@ -86,7 +86,6 @@ async fn main() -> std::io::Result<()> {
         client.register().await.expect("Failed to register");
     });
 
-
     // Add shutdown hook
     tokio::select! {
         _ = server => Ok(()),
