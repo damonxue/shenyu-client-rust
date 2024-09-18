@@ -277,7 +277,7 @@ pub mod actix_web_impl {
         ($router:expr, $app:expr, $($path:expr => $method:ident($handler:expr))*) => {
             $(
                 $router.route($path, stringify!($method));
-                $app = $app.service(web::resource($path).route(web::$method().to($handler)));
+                $app = $app.service(actix_web::web::resource($path).route(actix_web::web::$method().to($handler)));
             )*
         }
     }

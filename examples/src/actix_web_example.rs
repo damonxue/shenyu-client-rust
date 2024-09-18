@@ -16,13 +16,12 @@
 // under the License.
 
 #![cfg(feature = "actix-web")]
-use actix_web::rt::signal;
-use actix_web::{middleware, web, App, HttpServer, Responder};
+use actix_web::rt::{signal, spawn};
+use actix_web::{middleware, App, HttpServer, Responder};
 use shenyu_client_rust::actix_web_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
 use shenyu_client_rust::{core::ShenyuClient, shenyu_router, IRouter};
-use std::ops::DerefMut;
-use std::sync::{Arc, Mutex};
+use std::sync::OnceLock;
 
 async fn health_handler() -> impl Responder {
     "OK"
@@ -38,49 +37,38 @@ async fn index() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let router_arc = Arc::new(Mutex::new(ShenYuRouter::new("shenyu_client_app")));
-    let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
-
-    let client = {
-        let binding = Arc::clone(&router_arc);
-        let router_clone = binding.lock().unwrap();
-        let res = ShenyuClient::from(
-            config,
-            router_clone.app_name(),
-            router_clone.uri_infos(),
-            4000,
-        );
-        let client = res.unwrap();
-        client
-    };
-
-    let binding = Arc::clone(&router_arc);
-    let server = HttpServer::new(move || {
-        let mut router_clone = binding.lock().unwrap();
+    HttpServer::new(move || {
+        let mut router = ShenYuRouter::new("shenyu_client_app");
         let mut app = App::new().wrap(middleware::Logger::default());
-        let router_clone = router_clone.deref_mut();
         shenyu_router!(
-            router_clone,
+            router,
             app,
             "/health" => get(health_handler)
             "/create_user" => post(create_user_handler)
             "/" => get(index)
         );
-
+        static ONCE: OnceLock<()> = OnceLock::new();
+        ONCE.get_or_init(|| {
+            let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
+            let client = {
+                let res = ShenyuClient::from(config, router.app_name(), router.uri_infos(), 4000);
+                let client = res.unwrap();
+                client
+            };
+            client.register().expect("Failed to register");
+            spawn(async move {
+                // Add shutdown hook
+                tokio::select! {
+                    _ = signal::ctrl_c() => {
+                        client.offline_register();
+                    }
+                }
+            });
+        });
         app
     })
     .bind(("0.0.0.0", 4000))
     .expect("Can not bind to 4000")
-    .run();
-
-    client.register().await.expect("Failed to register");
-
-    // Add shutdown hook
-    tokio::select! {
-        _ = server => Ok(()),
-        _ = signal::ctrl_c() => {
-            client.offline_register().await;
-            Ok(())
-        }
-    }
+    .run()
+    .await
 }

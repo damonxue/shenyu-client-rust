@@ -19,10 +19,10 @@ use crate::config::ShenYuConfig;
 use crate::error::ShenYuError;
 use crate::model::{EventType, UriInfo};
 use dashmap::DashMap;
-use reqwest::{Client, Response};
 use serde_json::Value;
 use std::io::{Error, ErrorKind};
 use std::net::{IpAddr, Ipv4Addr};
+use ureq::OrAnyStatus;
 
 pub const REGISTER_META_DATA_SUFFIX: &str = "/shenyu-client/register-metadata";
 pub const REGISTER_URI_SUFFIX: &str = "/shenyu-client/register-uri";
@@ -48,19 +48,17 @@ pub struct ShenyuClient {
 }
 
 impl ShenyuClient {
-    pub async fn register(&self) -> Result<(), Error> {
-        if let Ok(token) = self.get_register_token().await {
+    pub fn register(&self) -> Result<(), Error> {
+        if let Ok(token) = self.get_register_token() {
             self.headers
                 .insert("X-Access-Token".to_string(), token.to_string());
         } else {
             return Err(Error::new(ErrorKind::Other, "Can't get register token"));
         }
         self.register_all_metadata(true)
-            .await
             .expect("Failed to register metadata");
-        self.register_uri().await.expect("Failed to register URI");
+        self.register_uri().expect("Failed to register URI");
         self.register_discovery_config()
-            .await
             .expect("Failed to register discovery config");
         Ok(())
     }
@@ -158,16 +156,15 @@ impl ShenyuClient {
         Ok(())
     }
 
-    async fn request(&self, url: &str, json_data: &Value) -> Result<bool, Error> {
-        let client = Client::new();
-        let mut builder = client.post(url).json(json_data);
+    fn request(&self, url: &str, json_data: &Value) -> Result<bool, Error> {
+        let mut builder = ureq::post(url);
         // 遍历header， 添加到builder中
-        for (key, value) in self.headers.clone() {
-            builder = builder.header(key, value);
+        for r in &self.headers {
+            builder = builder.set(r.key(), r.value());
         }
-        let res = builder.send().await.unwrap();
+        let res = builder.send_json(json_data).unwrap();
         let status_code = res.status();
-        let msg = res.text().await.unwrap();
+        let msg = res.into_string()?;
 
         if msg == "success" {
             Ok(true)
@@ -180,18 +177,21 @@ impl ShenyuClient {
         }
     }
 
-    async fn get_register_token(&self) -> Result<String, Error> {
-        let client = Client::new();
+    fn get_register_token(&self) -> Result<String, Error> {
         let hashmap = &self.env.register.props;
         let params = [
-            ("userName", hashmap.get("username")),
-            ("password", hashmap.get("password")),
+            ("userName", hashmap.get("username").unwrap().as_str()),
+            ("password", hashmap.get("password").unwrap().as_str()),
         ];
 
         let result = Err(ShenYuError::new(500, "Can't get register token".to_string()).into());
         for url in &self.register_token_servers {
-            let res: Response = client.get(url).query(&params).send().await.unwrap();
-            let res_data: Value = res.json().await.unwrap();
+            let res_data: Value = ureq::get(url)
+                .query_pairs(params)
+                .call()
+                .or_any_status()
+                .map_err(|e| Error::new(ErrorKind::Other, format!("{e}")))?
+                .into_json()?;
             match res_data
                 .get("data")
                 .and_then(|data| data.get("token"))
@@ -204,7 +204,7 @@ impl ShenyuClient {
         result
     }
 
-    pub async fn register_uri(&self) -> Result<bool, Error> {
+    pub fn register_uri(&self) -> Result<bool, Error> {
         let app_name = &self.app_name.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let context_path = &self.env.uri.context_path.clone();
@@ -223,7 +223,7 @@ impl ShenyuClient {
         });
 
         for url in &self.register_uri_list {
-            if self.request(url, &json_data).await? {
+            if self.request(url, &json_data)? {
                 println!(
                     "[SUCCESS], register uri success, register data: {:#?}",
                     json_data
@@ -241,18 +241,15 @@ impl ShenyuClient {
         Ok(false)
     }
 
-    pub async fn register_all_metadata(&self, enabled: bool) -> Result<bool, Error> {
+    pub fn register_all_metadata(&self, enabled: bool) -> Result<bool, Error> {
         for x in self.uri_infos.iter() {
-            match self
-                .register_metadata(
-                    false,
-                    Some(&x.path),
-                    Some(&x.method_name),
-                    Some(&x.rule_name),
-                    enabled,
-                )
-                .await
-            {
+            match self.register_metadata(
+                false,
+                Some(&x.path),
+                Some(&x.method_name),
+                Some(&x.rule_name),
+                enabled,
+            ) {
                 Ok(true) => continue,
                 Ok(false) => return Ok(false),
                 Err(e) => return Err(e),
@@ -261,7 +258,7 @@ impl ShenyuClient {
         Ok(true)
     }
 
-    async fn register_metadata(
+    fn register_metadata(
         &self,
         register_all: bool,
         path: Option<&str>,
@@ -298,7 +295,7 @@ impl ShenyuClient {
         });
 
         for url in &self.register_meta_data_path_list {
-            if self.request(url, &json_data).await? {
+            if self.request(url, &json_data)? {
                 println!(
                     "[SUCCESS], register metadata success, register data: {:#?}",
                     json_data
@@ -314,7 +311,7 @@ impl ShenyuClient {
         Ok(false)
     }
 
-    pub async fn register_discovery_config(&self) -> Result<bool, Error> {
+    pub fn register_discovery_config(&self) -> Result<bool, Error> {
         let discovery_type = &self.env.discovery.discovery_type.clone();
         let register_path = &self.env.discovery.register_path.clone();
         let server_lists = &self.env.discovery.server_lists.clone();
@@ -337,7 +334,7 @@ impl ShenyuClient {
         });
 
         for url in &self.register_discover_config_servers {
-            if self.request(url, &json_data).await? {
+            if self.request(url, &json_data)? {
                 println!(
                     "[SUCCESS], register discover config success, register data: {:#?}",
                     json_data
@@ -355,7 +352,7 @@ impl ShenyuClient {
         Ok(false)
     }
 
-    pub async fn offline_register(&self) {
+    pub fn offline_register(&self) {
         let app_name = &self.app_name.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let context_path = &self.env.uri.context_path.clone();
@@ -373,7 +370,7 @@ impl ShenyuClient {
         });
 
         for url in &self.register_offline_servers {
-            if self.request(url, &json_data).await.unwrap() {
+            if self.request(url, &json_data).unwrap() {
                 println!(
                     "[SUCCESS], offline success, register data: {:#?}",
                     json_data
