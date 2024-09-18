@@ -177,7 +177,7 @@ impl ShenyuClient {
         }
     }
 
-    fn get_register_token(&self) -> Result<String, Error> {
+    pub(crate) fn get_register_token(&self) -> Result<String, Error> {
         let hashmap = &self.env.register.props;
         let params = [
             ("userName", hashmap.get("username").unwrap().as_str()),
