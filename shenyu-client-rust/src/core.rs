@@ -48,7 +48,7 @@ pub struct ShenyuClient {
 }
 
 impl ShenyuClient {
-    pub async fn register(&self) -> Result<(), Error> {
+    pub async fn register(&mut self) -> Result<(), Error> {
         if let Ok(token) = self.get_register_token().await {
             self.headers
                 .insert("X-Access-Token".to_string(), token.to_string());
@@ -156,6 +156,10 @@ impl ShenyuClient {
         self.host = Some(host.to_string());
 
         Ok(())
+    }
+
+    pub fn push_uri_info(&mut self, uris: &[UriInfo]) {
+        self.uri_infos.extend(uris.to_owned());
     }
 
     async fn request(&self, url: &str, json_data: &Value) -> Result<bool, Error> {

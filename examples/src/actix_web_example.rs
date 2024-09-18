@@ -16,13 +16,14 @@
 // under the License.
 
 #![cfg(feature = "actix-web")]
-use actix_web::rt::signal;
+use actix_web::rt::{signal, spawn};
 use actix_web::{middleware, web, App, HttpServer, Responder};
 use shenyu_client_rust::actix_web_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
 use shenyu_client_rust::{core::ShenyuClient, shenyu_router, IRouter};
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
+use std::thread::sleep;
 
 async fn health_handler() -> impl Responder {
     "OK"
@@ -54,6 +55,10 @@ async fn main() -> std::io::Result<()> {
         client
     };
 
+    let arc_client = Arc::new(Mutex::new(client));
+    let client_c = arc_client.clone();
+    let client_c1 = arc_client.clone();
+
     let binding = Arc::clone(&router_arc);
     let server = HttpServer::new(move || {
         let mut router_clone = binding.lock().unwrap();
@@ -73,12 +78,20 @@ async fn main() -> std::io::Result<()> {
     .expect("Can not bind to 4000")
     .run();
 
-    client.register().await.expect("Failed to register");
+    let binding = Arc::clone(&router_arc);
+    spawn(async move {
+        sleep(std::time::Duration::from_secs(5));
+        let mut client = client_c.lock().unwrap();
+        client.push_uri_info(binding.lock().unwrap().uri_infos());
+        client.register().await.expect("Failed to register");
+    });
+
 
     // Add shutdown hook
     tokio::select! {
         _ = server => Ok(()),
         _ = signal::ctrl_c() => {
+            let client = client_c1.lock().unwrap();
             client.offline_register().await;
             Ok(())
         }
