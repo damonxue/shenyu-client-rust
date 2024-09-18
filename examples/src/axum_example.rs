@@ -38,7 +38,7 @@ async fn main() {
         .route("/health", "get", get(health_handler))
         .route("/users", "post", post(create_user_handler));
     let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
-    let client = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 3000).unwrap();
+    let mut client = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 3000).unwrap();
 
     let axum_app: Router = app.into();
     client.register().await.expect("TODO: panic message");
