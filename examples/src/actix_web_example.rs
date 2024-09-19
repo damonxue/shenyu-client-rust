@@ -52,8 +52,8 @@ async fn main() -> std::io::Result<()> {
 
         app
     })
-        .bind(("0.0.0.0", 4000))
-        .expect("Can not bind to 4000")
-        .run()
-        .await
+    .bind(("0.0.0.0", 4000))
+    .expect("Can not bind to 4000")
+    .run()
+    .await
 }

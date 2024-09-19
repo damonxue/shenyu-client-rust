@@ -106,7 +106,7 @@ pub mod axum_impl {
 
         pub fn route_service<T>(mut self, path: &str, method: &str, service: T) -> Self
         where
-            T: Service<Request, Error=Infallible> + Clone + Send + 'static,
+            T: Service<Request, Error = Infallible> + Clone + Send + 'static,
             T::Response: IntoResponse,
             T::Future: Send + 'static,
         {
@@ -130,7 +130,7 @@ pub mod axum_impl {
         #[track_caller]
         pub fn nest_service<T>(mut self, path: &str, method: &str, service: T) -> Self
         where
-            T: Service<Request, Error=Infallible> + Clone + Send + 'static,
+            T: Service<Request, Error = Infallible> + Clone + Send + 'static,
             T::Response: IntoResponse,
             T::Future: Send + 'static,
         {
