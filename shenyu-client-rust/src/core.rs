@@ -21,7 +21,7 @@ use crate::model::{EventType, UriInfo};
 use dashmap::DashMap;
 use serde_json::Value;
 use std::io::{Error, ErrorKind};
-use std::net::{IpAddr, Ipv4Addr};
+use std::net::IpAddr;
 use ureq::OrAnyStatus;
 
 pub const REGISTER_META_DATA_SUFFIX: &str = "/shenyu-client/register-metadata";
@@ -129,8 +129,7 @@ impl ShenyuClient {
             .map(|url| format!("{}{}", url, REGISTER_OFFLINE_SUFFIX))
             .collect();
 
-        #[warn(unused_assignments)]
-        let mut host = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+        let host;
         #[cfg(not(target_os = "macos"))]
         {
             host = match local_ip_address::local_ip() {
