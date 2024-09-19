@@ -106,7 +106,7 @@ pub mod axum_impl {
 
         pub fn route_service<T>(mut self, path: &str, method: &str, service: T) -> Self
         where
-            T: Service<Request, Error = Infallible> + Clone + Send + 'static,
+            T: Service<Request, Error=Infallible> + Clone + Send + 'static,
             T::Response: IntoResponse,
             T::Future: Send + 'static,
         {
@@ -130,7 +130,7 @@ pub mod axum_impl {
         #[track_caller]
         pub fn nest_service<T>(mut self, path: &str, method: &str, service: T) -> Self
         where
-            T: Service<Request, Error = Infallible> + Clone + Send + 'static,
+            T: Service<Request, Error=Infallible> + Clone + Send + 'static,
             T::Response: IntoResponse,
             T::Future: Send + 'static,
         {
@@ -273,6 +273,25 @@ pub mod actix_web_impl {
 
     #[macro_export]
     macro_rules! shenyu_router {
+        (ONCE => $config:expr, $router:expr, $port:literal) => {
+            static ONCE: OnceLock<()> = OnceLock::new();
+            ONCE.get_or_init(|| {
+                let client = {
+                    let res = ShenyuClient::from($config, $router.app_name(), $router.uri_infos(), $port);
+                    let client = res.unwrap();
+                    client
+                };
+                client.register().expect("Failed to register");
+                spawn(async move {
+                    // Add shutdown hook
+                    tokio::select! {
+                        _ = signal::ctrl_c() => {
+                            client.offline_register();
+                        }
+                    }
+                });
+            });
+        };
         ($router:expr, $app:expr, $($path:expr => $method:ident($handler:expr))*) => {
             $(
                 $router.route($path, stringify!($method));

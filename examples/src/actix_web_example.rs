@@ -40,6 +40,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let mut router = ShenYuRouter::new("shenyu_client_app");
         let mut app = App::new().wrap(middleware::Logger::default());
+        let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
         shenyu_router!(
             router,
             app,
@@ -47,28 +48,12 @@ async fn main() -> std::io::Result<()> {
             "/create_user" => post(create_user_handler)
             "/" => get(index)
         );
-        static ONCE: OnceLock<()> = OnceLock::new();
-        ONCE.get_or_init(|| {
-            let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
-            let client = {
-                let res = ShenyuClient::from(config, router.app_name(), router.uri_infos(), 4000);
-                let client = res.unwrap();
-                client
-            };
-            client.register().expect("Failed to register");
-            spawn(async move {
-                // Add shutdown hook
-                tokio::select! {
-                    _ = signal::ctrl_c() => {
-                        client.offline_register();
-                    }
-                }
-            });
-        });
+        shenyu_router!(ONCE => config, router, 4000);
+
         app
     })
-    .bind(("0.0.0.0", 4000))
-    .expect("Can not bind to 4000")
-    .run()
-    .await
+        .bind(("0.0.0.0", 4000))
+        .expect("Can not bind to 4000")
+        .run()
+        .await
 }
