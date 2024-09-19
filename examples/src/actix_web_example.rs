@@ -16,12 +16,10 @@
 // under the License.
 
 #![cfg(feature = "actix-web")]
-use actix_web::rt::{signal, spawn};
 use actix_web::{middleware, App, HttpServer, Responder};
 use shenyu_client_rust::actix_web_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
-use shenyu_client_rust::{core::ShenyuClient, shenyu_router, IRouter};
-use std::sync::OnceLock;
+use shenyu_client_rust::{core::ShenyuClient, register_once, shenyu_router, IRouter};
 
 async fn health_handler() -> impl Responder {
     "OK"
@@ -48,7 +46,7 @@ async fn main() -> std::io::Result<()> {
             "/create_user" => post(create_user_handler)
             "/" => get(index)
         );
-        shenyu_router!(ONCE => config, router, 4000);
+        register_once!(config, router, 4000);
 
         app
     })

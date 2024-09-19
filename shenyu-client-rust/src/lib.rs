@@ -44,7 +44,15 @@ pub mod axum_impl {
 
     /// A router that can be used to register routes.
     ///
-    /// This is a wrapper around [`Router`] that provides a more ergonomic API.
+    /// This is a wrapper around `Router` that provides a more ergonomic API.
+    /// It allows you to define routes and nest other routers or services.
+    ///
+    /// # Fields
+    ///
+    /// * `app_name` - The name of the application.
+    /// * `uri_infos` - A vector of URI information.
+    ///
+    /// # Examples
     /// ```rust
     ///
     /// use axum::routing::{get, post};
@@ -64,8 +72,8 @@ pub mod axum_impl {
     ///
     /// let app = ShenYuRouter::<()>::new("shenyu_client_app")
     ///     .nest("/api", ShenYuRouter::new("api"))
-    ///     .route("/health", get(health_handler))
-    ///     .route("/users", post(create_user_handler));
+    ///     .route("/health", "get", get(health_handler))
+    ///     .route("/users", "post", post(create_user_handler));
     ///
     /// ```
     ///
@@ -204,39 +212,13 @@ pub mod actix_web_impl {
 
     /// A router that can be used to register routes.
     ///
-    /// This is a wrapper around [`Router`] that provides a more ergonomic API.
-    /// ```rust
+    /// This is a wrapper around `Router` that provides a more ergonomic API.
+    /// It allows you to define routes and nest other routers or services.
     ///
-    /// use actix_web::{web, get, post, App};
-    /// use shenyu_client_rust::actix_web_impl::ShenYuRouter;
-    /// use shenyu_client_rust::config::ShenYuConfig;
-    /// use shenyu_client_rust::core::ShenyuClient;
+    /// # Fields
     ///
-    /// async fn health_handler() -> &'static str {
-    ///     "OK"
-    /// }
-    ///
-    /// async fn create_user_handler() -> &'static str {
-    ///     "User created"
-    /// }
-    ///
-    /// async fn index() -> &'static str {
-    ///     "Welcome!"
-    /// }
-    ///
-    /// let router = ShenYuRouter::new("shenyu_client_app")
-    ///     .route("/health", web::get(), health_handler)
-    ///     .route("/users", web::post(), create_user_handler)
-    ///     .service("/index.html", web::get(), index);
-    /// let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
-    /// let res = ShenyuClient::from(config, router.app_name(), router.uri_infos(), 9527);
-    /// res.unwrap();
-    /// let resouces = router.resources();
-    /// let app = App::new().service(resouces);
-    /// // then app is same as actix_web::App
-    ///
-    /// ```
-    ///
+    /// * `app_name` - The name of the application.
+    /// * `uri_infos` - A vector of URI information.
     #[derive(Debug, Clone)]
     pub struct ShenYuRouter {
         app_name: String,
@@ -271,27 +253,58 @@ pub mod actix_web_impl {
         }
     }
 
+    /// Macro to register the ShenYu client once.
+    ///
+    /// This macro ensures that the ShenYu client is registered only once using a `OnceLock`.
+    /// It initializes the client with the provided configuration, router, and port, and sets up
+    /// a shutdown hook to deregister the client upon receiving a `ctrl_c` signal.
+    ///
+    /// # Arguments
+    ///
+    /// * `$config` - The configuration for the ShenYu client.
+    /// * `$router` - The router instance.
+    /// * `$port` - The port number.
     #[macro_export]
-    macro_rules! shenyu_router {
-        (ONCE => $config:expr, $router:expr, $port:literal) => {
+    macro_rules! register_once {
+        ($config:expr, $router:expr, $port:literal) => {
+            use std::sync::OnceLock;
+
             static ONCE: OnceLock<()> = OnceLock::new();
             ONCE.get_or_init(|| {
                 let client = {
-                    let res = ShenyuClient::from($config, $router.app_name(), $router.uri_infos(), $port);
+                    let res =
+                        ShenyuClient::from($config, $router.app_name(), $router.uri_infos(), $port);
                     let client = res.unwrap();
                     client
                 };
                 client.register().expect("Failed to register");
-                spawn(async move {
+                actix_web::rt::spawn(async move {
                     // Add shutdown hook
                     tokio::select! {
-                        _ = signal::ctrl_c() => {
+                        _ = actix_web::rt::signal::ctrl_c() => {
                             client.offline_register();
                         }
                     }
                 });
             });
         };
+    }
+
+    /// Macro to define routes for the ShenYu router.
+    ///
+    /// This macro allows you to define routes for the ShenYu router in a concise manner.
+    /// It supports both regular routes and nested routes.
+    ///
+    /// # Arguments
+    ///
+    /// * `$router` - The router instance.
+    /// * `$app` - The Actix web application instance.
+    /// * `$path` - The path for the route.
+    /// * `$method` - The HTTP method for the route (e.g., `get`, `post`).
+    /// * `$handler` - The handler function for the route.
+    ///
+    #[macro_export]
+    macro_rules! shenyu_router {
         ($router:expr, $app:expr, $($path:expr => $method:ident($handler:expr))*) => {
             $(
                 $router.route($path, stringify!($method));
