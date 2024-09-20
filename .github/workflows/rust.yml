@@ -49,6 +49,7 @@ jobs:
         run: |
           cd ~
           git clone https://github.com/apache/shenyu
+          cd ~/shenyu
           mvn clean package -DskipTests
           cd ~/shenyu/shenyu-admin/target
           nohup java -jar shenyu-admin.jar &
