@@ -48,9 +48,23 @@ jobs:
       - name: Run shenyu admin
         env:
           OS: ${{ matrix.os }}
-        run: sh .github/workflows/shenyu.sh
+        run: |
+          cd ~
+          git clone https://github.com/apache/shenyu
+          cd ~/shenyu
+          mvn clean -Prelease -Dmaven.javadoc.skip=true -B -Drat.skip=true -Djacoco.skip=true -DskipITs -DskipTests package -pl ./shenyu-dist/shenyu-admin-dist -am -U
+          cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target
+          tar -xzf apache-shenyu-*.tar.gz
+          cd apache-shenyu-*/bin
+      - name: Start shenyu admin on Unix
+        if: ${{ !contains(matrix.os, 'windows') }}
+        run: sh ./start.sh
+      - name: Start shenyu admin on Windows
+        if: ${{ contains(matrix.os, 'windows') }}
+        run: .\start.bat
 
-      - name: Run tests
+      - name: Run tests on Unix
+        if: ${{ !contains(matrix.os, 'windows') }}
         env:
           CHANNEL: ${{ matrix.channel }}
           CROSS: ${{ !startsWith(matrix.target, 'x86_64') && contains(matrix.target, 'linux') && '1' || '0' }}
@@ -58,6 +72,26 @@ jobs:
           OS: ${{ matrix.os }}
           PROJECT_DIR: ${{ github.workspace }}
         run: sh .github/workflows/ci.sh
+      - name: Run tests on Windows
+        if: ${{ contains(matrix.os, 'windows') }}
+        env:
+          CHANNEL: ${{ matrix.channel }}
+          CROSS: ${{ !startsWith(matrix.target, 'x86_64') && contains(matrix.target, 'linux') && '1' || '0' }}
+          TARGET: ${{ matrix.target }}
+          OS: ${{ matrix.os }}
+          PROJECT_DIR: ${{ github.workspace }}
+        run: .github/workflows/ci.bat
+
+      - name: Stop shenyu admin on Unix
+        if: ${{ !contains(matrix.os, 'windows') }}
+        run: |
+          cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin
+          sh ./stop.sh
+      - name: Stop shenyu admin on Windows
+        if: ${{ contains(matrix.os, 'windows') }}
+        run:  |
+          cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin
+          .\stop.bat
 
     strategy:
       fail-fast: false
