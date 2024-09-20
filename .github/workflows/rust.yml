@@ -25,6 +25,14 @@ env:
 jobs:
   build-and-test:
     runs-on: ${{ matrix.os }}
+    services:
+      shenyu-admin:
+        image: apache/shenyu-admin:latest
+        ports:
+          - 9095:9095
+        options: --name shenyu-admin
+
+
     steps:
       - uses: actions/checkout@v4
 
@@ -39,22 +47,8 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
-
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: 'temurin'
-
-      - name: Run shenyu admin
-        run: |
-          cd ~
-          git clone https://github.com/apache/shenyu
-          cd ~/shenyu
-          mvn clean package -DskipTests
-          cd ~/shenyu/shenyu-admin/target
-          nohup java -jar shenyu-admin.jar &
-
-      - name: Run tests
+      - name: Run tests on Unix
+        if: ${{ !contains(matrix.os, 'windows') }}
         env:
           CHANNEL: ${{ matrix.channel }}
           CROSS: ${{ !startsWith(matrix.target, 'x86_64') && contains(matrix.target, 'linux') && '1' || '0' }}
@@ -62,6 +56,15 @@ jobs:
           OS: ${{ matrix.os }}
           PROJECT_DIR: ${{ github.workspace }}
         run: sh .github/workflows/ci.sh
+      - name: Run tests on Windows
+        if: ${{ contains(matrix.os, 'windows') }}
+        env:
+          CHANNEL: ${{ matrix.channel }}
+          CROSS: ${{ !startsWith(matrix.target, 'x86_64') && contains(matrix.target, 'linux') && '1' || '0' }}
+          TARGET: ${{ matrix.target }}
+          OS: ${{ matrix.os }}
+          PROJECT_DIR: ${{ github.workspace }}
+        run: .github/workflows/ci.bat
 
     strategy:
       fail-fast: false
