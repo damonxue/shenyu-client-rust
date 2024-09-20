@@ -7,7 +7,7 @@ cd shenyu
 mvn clean -Prelease -DskipTests package -pl ./shenyu-dist/shenyu-admin-dist -am -U
 
 set "targetName=shenyu-admin.tar.gz"
-set "sourcePath=shenyu-dist/shenyu-admin-dist/target"
+set sourcePath=%USERPROFILE%\shenyu\shenyu-dist\shenyu-admin-dist\target
 
 for %%f in (%sourcePath%\apache-shenyu*.tar.gz) do (
     ren "%%f" "%targetName%"
