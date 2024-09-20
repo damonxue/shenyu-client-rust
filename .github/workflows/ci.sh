@@ -3,7 +3,7 @@
 set -ex
 
 CARGO=cargo
-if [ "${CROSS}" = "1" ]; then
+if [[ "${CROSS}" = "1" ]]; then
     export CARGO_NET_RETRY=5
     export CARGO_NET_TIMEOUT=10
 
