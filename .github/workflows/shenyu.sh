@@ -1,11 +1,9 @@
-#!/usr/bin/env sh
+#!/bin/bash
 
 cd ~
-wget https://archive.apache.org/dist/shenyu/2.6.0/apache-shenyu-2.6.0-admin-bin.tar.gz
-tar -zxvf apache-shenyu-2.6.0-admin-bin.tar.gz
-cd ~/apache-shenyu-2.6.0-admin-bin/bin
-if [ "${OS}" = "windows-latest" ]; then
-  sh start.bat
-else
-  sh start.sh
-fi
+git clone https://github.com/apache/shenyu
+cd ~/shenyu
+mvn clean -Prelease -Dmaven.javadoc.skip=true -B -Drat.skip=true -Djacoco.skip=true -DskipITs -DskipTests package -pl ./shenyu-dist/shenyu-admin-dist -am -U
+cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target
+tar -xzf apache-shenyu-*.tar.gz
+sh ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin/start.sh

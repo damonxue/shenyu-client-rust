@@ -47,26 +47,11 @@ jobs:
 
       - name: Start shenyu admin on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
-        run: |
-          cd ~
-          git clone https://github.com/apache/shenyu
-          cd ~/shenyu
-          mvn clean -Prelease -Dmaven.javadoc.skip=true -B -Drat.skip=true -Djacoco.skip=true -DskipITs -DskipTests package -pl ./shenyu-dist/shenyu-admin-dist -am -U
-          cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target
-          tar -xzf apache-shenyu-*.tar.gz
-          sh ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin/start.sh
+        run: sh .github/workflows/shenyu.sh
       - name: Start shenyu admin on Windows
         if: ${{ contains(matrix.os, 'windows') }}
-        run: |
-          cd $env:USERPROFILE
-          git config --system core.longpaths true
-          git clone https://github.com/apache/shenyu
-          cd ./shenyu
-          mvn clean -Prelease-DskipTests package -pl ./shenyu-dist/shenyu-admin-dist -am -U
-          cd ./shenyu-dist/shenyu-admin-dist/target
-          tar -xzf apache-shenyu-*.tar.gz
-          cd apache-shenyu-*/bin
-          .\start.bat
+        run: .github/workflows/shenyu.bat
+          
 
       - name: Run tests on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
@@ -95,7 +80,8 @@ jobs:
       - name: Stop shenyu admin on Windows
         if: ${{ contains(matrix.os, 'windows') }}
         run:  |
-          cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin
+          cd %USERPROFILE%
+          cd shenyu/shenyu-dist/shenyu-admin-dist/target/shenyu-admin/bin
           .\stop.bat
 
     strategy:
