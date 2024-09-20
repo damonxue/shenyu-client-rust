@@ -45,9 +45,8 @@ jobs:
           java-version: 17
           distribution: 'temurin'
 
-      - name: Run shenyu admin
-        env:
-          OS: ${{ matrix.os }}
+      - name: Start shenyu admin on Unix
+        if: ${{ !contains(matrix.os, 'windows') }}
         run: |
           cd ~
           git clone https://github.com/apache/shenyu
@@ -55,16 +54,17 @@ jobs:
           mvn clean -Prelease -Dmaven.javadoc.skip=true -B -Drat.skip=true -Djacoco.skip=true -DskipITs -DskipTests package -pl ./shenyu-dist/shenyu-admin-dist -am -U
           cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target
           tar -xzf apache-shenyu-*.tar.gz
-          cd apache-shenyu-*/bin
-      - name: Start shenyu admin on Unix
-        if: ${{ !contains(matrix.os, 'windows') }}
-        run: |
-          cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin
-          sh ./start.sh
+          sh ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin/start.sh
       - name: Start shenyu admin on Windows
         if: ${{ contains(matrix.os, 'windows') }}
         run: |
-          cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin
+          cd $env:USERPROFILE
+          git clone https://github.com/apache/shenyu
+          cd ./shenyu
+          mvn clean -Prelease -Dmaven.javadoc.skip=true -B -Drat.skip=true -Djacoco.skip=true -DskipITs -DskipTests package -pl ./shenyu-dist/shenyu-admin-dist -am -U
+          cd .shenyu-dist/shenyu-admin-dist/target
+          tar -xzf apache-shenyu-*.tar.gz
+          cd apache-shenyu-*/bin
           .\start.bat
 
       - name: Run tests on Unix
