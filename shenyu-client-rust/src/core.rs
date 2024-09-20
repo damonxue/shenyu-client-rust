@@ -21,7 +21,7 @@ use crate::model::{EventType, UriInfo};
 use dashmap::DashMap;
 use serde_json::Value;
 use std::io::{Error, ErrorKind};
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr};
 use ureq::OrAnyStatus;
 
 pub const REGISTER_META_DATA_SUFFIX: &str = "/shenyu-client/register-metadata";
