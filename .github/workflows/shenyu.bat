@@ -1,5 +1,4 @@
 @echo off
-setlocal
 
 cd %USERPROFILE%
 git config --system core.longpaths true
@@ -17,5 +16,3 @@ for %%f in (shenyu-dist\shenyu-admin-dist\target\*.tar.gz) do (
 tar -xzf shenyu-admin.tar.gz
 cd shenyu-admin\bin
 .\start.bat
-
-endlocal

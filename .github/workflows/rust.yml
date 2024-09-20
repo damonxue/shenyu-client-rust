@@ -47,6 +47,7 @@ jobs:
 
       - name: Start shenyu admin on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
+        shell: bash
         run: sh .github/workflows/shenyu.sh
       - name: Start shenyu admin on Windows
         if: ${{ contains(matrix.os, 'windows') }}
@@ -61,6 +62,7 @@ jobs:
           TARGET: ${{ matrix.target }}
           OS: ${{ matrix.os }}
           PROJECT_DIR: ${{ github.workspace }}
+        shell: bash
         run: sh .github/workflows/ci.sh
       - name: Run tests on Windows
         if: ${{ contains(matrix.os, 'windows') }}

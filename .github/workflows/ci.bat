@@ -1,5 +1,4 @@
 @echo off
-setlocal
 
 set CARGO=cargo
 if "%CROSS%"=="1" (
@@ -24,5 +23,3 @@ timeout /t 10
 %~dp0%~nx0 run --package examples --all-features --bin axum_example || exit /b 0
 timeout /t 10
 %~dp0%~nx0 run --package examples --all-features --bin actix_web_example || exit /b 0
-
-endlocal
