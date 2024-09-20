@@ -59,6 +59,7 @@ jobs:
         if: ${{ contains(matrix.os, 'windows') }}
         run: |
           cd $env:USERPROFILE
+          git config --system core.longpaths true
           git clone https://github.com/apache/shenyu
           cd ./shenyu
           mvn clean -Prelease -Dmaven.javadoc.skip=true -B -Drat.skip=true -Djacoco.skip=true -DskipITs -DskipTests package -pl ./shenyu-dist/shenyu-admin-dist -am -U
