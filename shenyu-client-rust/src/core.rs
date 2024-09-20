@@ -129,30 +129,34 @@ impl ShenyuClient {
             .map(|url| format!("{}{}", url, REGISTER_OFFLINE_SUFFIX))
             .collect();
 
-        cfg_if::cfg_if! {
-            if #[cfg(target_os = "macos")] {
-                let mut host = IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1));
-                use local_ip_address::macos;
-                for (_, ipaddr) in macos::list_afinet_netifas().unwrap() {
-                    if IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)).eq(&ipaddr) {
-                        continue;
-                    }
-                    host = match ipaddr {
-                        IpAddr::V4(ipv4) => IpAddr::from(ipv4),
-                        _ => continue,
-                    };
+        let mut host = None;
+        #[cfg(not(target_os = "macos"))]
+        {
+            host = match local_ip_address::local_ip() {
+                Ok(std::net::IpAddr::V4(ipv4)) => Some(IpAddr::V4(ipv4)),
+                Ok(std::net::IpAddr::V6(ipv6)) => Some(IpAddr::from(ipv6.to_ipv4().unwrap())),
+                _ => None,
+            };
+        }
+        #[cfg(target_os = "macos")]
+        {
+            use local_ip_address::macos;
+            for (_, ipaddr) in macos::list_afinet_netifas().unwrap() {
+                if IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)).eq(&ipaddr) {
+                    continue;
                 }
-            } else {
-                let host = match local_ip_address::local_ip() {
-                    Ok(IpAddr::V4(ipv4)) => IpAddr::V4(ipv4),
-                    Ok(IpAddr::V6(ipv6)) => IpAddr::from(ipv6.to_ipv4().unwrap()),
-                    _ => todo!("Handle error"),
+                host = match ipaddr {
+                    IpAddr::V4(ipv4) => Some(IpAddr::from(ipv4)),
+                    _ => continue,
                 };
             }
         }
-        self.host = Some(host.to_string());
-
-        Ok(())
+        if let Some(host) = host {
+            self.host = Some(host.to_string());
+            Ok(())
+        } else {
+            Err("Failed to determine local IP address".to_string())
+        }
     }
 
     fn request(&self, url: &str, json_data: &Value) -> Result<bool, Error> {

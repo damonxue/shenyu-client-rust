@@ -1,3 +1,6 @@
+@echo off
+setlocal
+
 cd %USERPROFILE%
 git config --system core.longpaths true
 git clone https://github.com/apache/shenyu
@@ -13,4 +16,6 @@ for %%f in (shenyu-dist\shenyu-admin-dist\target\*.tar.gz) do (
 
 tar -xzf shenyu-admin.tar.gz
 cd shenyu-admin\bin
-start.bat
+.\start.bat
+
+endlocal
