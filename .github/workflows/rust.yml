@@ -58,10 +58,14 @@ jobs:
           cd apache-shenyu-*/bin
       - name: Start shenyu admin on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
-        run: sh ./start.sh
+        run: |
+          cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin
+          sh ./start.sh
       - name: Start shenyu admin on Windows
         if: ${{ contains(matrix.os, 'windows') }}
-        run: .\start.bat
+        run: |
+          cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin
+          .\start.bat
 
       - name: Run tests on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
