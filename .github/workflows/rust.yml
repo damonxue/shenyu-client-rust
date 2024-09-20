@@ -25,12 +25,6 @@ env:
 jobs:
   build-and-test:
     runs-on: ${{ matrix.os }}
-    services:
-      shenyu-admin:
-        image: apache/shenyu-admin:latest
-        ports:
-          - 9095:9095
-        options: --name shenyu-admin
 
 
     steps:
@@ -47,6 +41,20 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      - name: Run shenyu admin
+        run: |
+          cd ~
+          git clone https://github.com/apache/shenyu
+          cd ~/shenyu
+          mvn clean -Prelease -Dmaven.javadoc.skip=true -B -Drat.skip=true -Djacoco.skip=true -DskipITs -DskipTests package -pl ./shenyu-admin -am -U
+          cd ~/shenyu/shenyu-admin/target
+          nohup java -jar shenyu-admin.jar &
+
       - name: Run tests on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
         env:
