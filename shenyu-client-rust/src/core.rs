@@ -129,7 +129,7 @@ impl ShenyuClient {
             .map(|url| format!("{}{}", url, REGISTER_OFFLINE_SUFFIX))
             .collect();
 
-        cfg_if::cfg_if!{
+        cfg_if::cfg_if! {
             if #[cfg(target_os = "macos")] {
                 let mut host = IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1));
                 use local_ip_address::macos;
