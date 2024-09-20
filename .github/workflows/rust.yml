@@ -82,8 +82,7 @@ jobs:
       - name: Stop shenyu admin on Windows
         if: ${{ contains(matrix.os, 'windows') }}
         run:  |
-          cd %USERPROFILE%
-          cd shenyu/shenyu-dist/shenyu-admin-dist/target/shenyu-admin/bin
+          cd ${{ env.USERPROFILE }}\shenyu\shenyu-dist\shenyu-admin-dist\target\shenyu-admin\bin
           .\stop.bat
 
     strategy:
