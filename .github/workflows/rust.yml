@@ -46,13 +46,18 @@ jobs:
           distribution: 'temurin'
 
       - name: Run shenyu admin
+        env:
+          OS: ${{ matrix.os }}
         run: |
           cd ~
-          git clone https://github.com/apache/shenyu
-          cd ~/shenyu
-          mvn clean package -DskipTests
-          cd ~/shenyu/shenyu-admin/target
-          nohup java -jar shenyu-admin.jar &
+          wget https://archive.apache.org/dist/shenyu/2.6.0/apache-shenyu-2.6.0-admin-bin.tar.gz
+          tar -zxvf apache-shenyu-2.6.0-admin-bin.tar.gz
+          cd ~/apache-shenyu-2.6.0-admin-bin/bin
+          if [ "${OS}" = "windows-latest" ]; then
+            sh start.bat
+          else
+            sh start.sh
+          fi
 
       - name: Run tests
         env:

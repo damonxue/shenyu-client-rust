@@ -37,6 +37,7 @@ members = [
 ]
 
 [workspace.dependencies]
+cfg-if = "1.0.0"
 serde = "1"
 serde_json = "1"
 ureq = "2"
