@@ -55,7 +55,7 @@ jobs:
 
 
       - name: Set environment variables
-        id: set_env
+        if: ${{ !contains(matrix.os, 'windows') }}
         run: |
           if [[ "${{ matrix.target }}" == *"linux"* ]]; then
             GCC_PACKAGE=$(echo "${{ matrix.target }}" | sed 's/-unknown//g' | tr '[:upper:]' '[:lower:]')
