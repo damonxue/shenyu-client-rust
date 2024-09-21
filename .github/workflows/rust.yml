@@ -65,7 +65,7 @@ jobs:
         if: ${{ !startsWith(matrix.target, 'x86_64') && contains(matrix.target, 'linux') }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev pkg-config libc6-dev libc6-dev-i386 ${{ steps.set_env.outputs.GCC_PACKAGE }}
+          sudo apt-get install -y build-essential libssl-dev pkg-config libc6-dev libc6-dev-i386 ${{ env.GCC_PACKAGE }}
 
       - name: Run tests on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
