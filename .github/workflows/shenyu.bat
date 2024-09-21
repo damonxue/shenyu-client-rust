@@ -1,5 +1,8 @@
-cd %USERPROFILE%
-choco install -y gnuwin32-tar
+$url = "https://github.com/libarchive/libarchive/releases/download/v3.5.2/libarchive-3.5.2-win64.zip"
+$output = "tar.zip"
+Invoke-WebRequest -Uri $url -OutFile $output
+Expand-Archive -Path $output -DestinationPath $env:GITHUB_WORKSPACE\tar
+Add-Content -Path %GITHUB_PATH% -Value "%GITHUB_PATH%\tar\bin"
 
 git config --system core.longpaths true
 git clone https://github.com/apache/shenyu
