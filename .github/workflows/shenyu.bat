@@ -1,4 +1,6 @@
 cd %USERPROFILE%
+choco install -y gnuwin32-tar
+
 git config --system core.longpaths true
 git clone https://github.com/apache/shenyu
 cd shenyu/shenyu-dist/shenyu-admin-dist
