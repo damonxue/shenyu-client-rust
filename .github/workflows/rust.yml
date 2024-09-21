@@ -53,11 +53,19 @@ jobs:
         if: ${{ contains(matrix.os, 'windows') }}
         run: .github/workflows/shenyu.bat
 
+
+      - name: Set environment variables
+        id: set_env
+        run: |
+          if [[ "${{ matrix.target }}" == *"linux"* ]]; then
+            GCC_PACKAGE=$(echo "${{ matrix.target }}" | sed 's/-unknown//g' | tr '[:upper:]' '[:lower:]')
+            echo "GCC_PACKAGE=gcc-$GCC_PACKAGE" >> $GITHUB_ENV
+          fi
       - name: Install dependencies
         if: ${{ !startsWith(matrix.target, 'x86_64') && contains(matrix.target, 'linux') }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev pkg-config   
+          sudo apt-get install -y build-essential libssl-dev pkg-config libc6-dev libc6-dev-i386 ${{ steps.set_env.outputs.GCC_PACKAGE }}
 
       - name: Run tests on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
@@ -87,7 +95,8 @@ jobs:
       - name: Stop shenyu admin on Windows
         if: ${{ contains(matrix.os, 'windows') }}
         run:  |
-          cd ${{ env.USERPROFILE }}\shenyu\shenyu-dist\shenyu-admin-dist\target\shenyu-admin\bin
+          cd $env:USERPROFILE
+          cd shenyu\shenyu-dist\shenyu-admin-dist\target\shenyu-admin\bin
           .\stop.bat
 
     strategy:

@@ -1,5 +1,3 @@
-@echo off
-
 cd %USERPROFILE%
 git config --system core.longpaths true
 git clone https://github.com/apache/shenyu
@@ -8,6 +6,7 @@ mvn clean -Prelease -DskipTests package -pl ./shenyu-dist/shenyu-admin-dist -am 
 
 set "targetName=shenyu-admin.tar.gz"
 set sourcePath=%USERPROFILE%\shenyu\shenyu-dist\shenyu-admin-dist\target
+echo Source path: %sourcePath%
 
 for %%f in (%sourcePath%\apache-shenyu*.tar.gz) do (
     ren "%%f" "%targetName%"
