@@ -7,6 +7,6 @@ powershell -Command "(Get-Content %pomFile%) -replace '<finalName>.*</finalName>
 cd ../../
 mvn clean -Prelease -Dmaven.javadoc.skip=true -B -Drat.skip=true -Djacoco.skip=true -DskipITs -DskipTests package -pl ./shenyu-dist/shenyu-admin-dist -am -U
 cd shenyu-dist\shenyu-admin-dist\target
-tar -xzf shenyu-admin.tar.gz
-cd shenyu-admin\bin
+tar -xzf shenyu-admin-admin-bin.tar.gz
+cd shenyu-admin-admin-bin\bin
 .\start.bat
