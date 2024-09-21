@@ -1,4 +1,4 @@
-powershell -Command "Invoke-WebRequest -Uri 'https://github.com/libarchive/libarchive/releases/download/v3.5.2/libarchive-3.5.2-win64.zip' -OutFile 'tar.zip'"
+powershell -Command "Invoke-WebRequest -Uri 'https://github.com/libarchive/libarchive/releases/download/v3.7.5/libarchive-3.7.5.zip' -OutFile 'tar.zip'"
 powershell -Command "Expand-Archive -Path 'tar.zip' -DestinationPath '%GITHUB_WORKSPACE%\tar'"
 powershell -Command "Add-Content -Path $env:GITHUB_PATH -Value '%GITHUB_WORKSPACE%\tar\bin'"
 
