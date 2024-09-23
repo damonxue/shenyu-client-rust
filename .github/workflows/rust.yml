@@ -23,7 +23,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
 jobs:
-  dist:
+  build:
     strategy:
       matrix:
         target: [
@@ -36,6 +36,7 @@ jobs:
           x86_64-apple-darwin,
           aarch64-apple-darwin
         ]
+        os: [ windows-latest, ubuntu-20.04, macos-12 ]
         channel: [ stable, nightly-2024-08-02 ]
         include:
           - os: windows-latest
