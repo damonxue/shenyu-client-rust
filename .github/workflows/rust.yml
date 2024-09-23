@@ -103,6 +103,7 @@ jobs:
           TARGET: ${{ matrix.target }}
           OS: ${{ matrix.os }}
           PROJECT_DIR: ${{ github.workspace }}
+        shell: msys2 {0}
         run: .github/workflows/ci.bat
 
       - name: Stop shenyu admin on Unix
