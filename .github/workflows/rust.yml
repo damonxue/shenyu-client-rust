@@ -23,7 +23,46 @@ on:
 env:
   CARGO_TERM_COLOR: always
 jobs:
-  build-and-test:
+  dist:
+    strategy:
+      matrix:
+        target: [
+          x86_64-pc-windows-gnu,
+          i686-pc-windows-gnu,
+          aarch64-pc-windows-gnu,
+          x86_64-unknown-linux-gnu,
+          aarch64-unknown-linux-gnu,
+          arm-unknown-linux-gnueabihf,
+          x86_64-apple-darwin,
+          aarch64-apple-darwin
+        ]
+        channel: [ stable, nightly-2024-08-02 ]
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            code-target: win32-x64
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            code-target: win32-arm64
+          - os: ubuntu-20.04
+            target: x86_64-unknown-linux-gnu
+            code-target: linux-x64
+            container: rockylinux:8
+          - os: ubuntu-20.04
+            target: aarch64-unknown-linux-gnu
+            code-target: linux-arm64
+          - os: ubuntu-20.04
+            target: arm-unknown-linux-gnueabihf
+            code-target: linux-armhf
+          - os: macos-12
+            target: x86_64-apple-darwin
+            code-target: darwin-x64
+          - os: macos-12
+            target: aarch64-apple-darwin
+            code-target: darwin-arm64
+    name: ${{ matrix.os }}-${{ matrix.target }}-test
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     steps:
@@ -101,49 +140,10 @@ jobs:
         run: |
           cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin
           sh ./stop.sh
-#      - name: Stop shenyu admin on Windows
-#        if: ${{ contains(matrix.os, 'windows') }}
-#        run:  |
-#          cd %USERPROFILE%
-#          cd shenyu\shenyu-dist\shenyu-admin-dist\target\shenyu-admin\bin
-#          .\stop.bat
+  #      - name: Stop shenyu admin on Windows
+  #        if: ${{ contains(matrix.os, 'windows') }}
+  #        run:  |
+  #          cd %USERPROFILE%
+  #          cd shenyu\shenyu-dist\shenyu-admin-dist\target\shenyu-admin\bin
+  #          .\stop.bat
 
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [
-            x86_64-pc-windows-gnu,
-            i686-pc-windows-gnu,
-            aarch64-pc-windows-gnu,
-            x86_64-unknown-linux-gnu,
-            aarch64-unknown-linux-gnu,
-            arm-unknown-linux-gnueabihf,
-            x86_64-apple-darwin,
-            aarch64-apple-darwin
-        ]
-        channel: [ stable, nightly-2024-08-02 ]
-        include:
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            code-target: win32-x64
-          - os: windows-latest
-            target: i686-pc-windows-msvc
-          - os: windows-latest
-            target: aarch64-pc-windows-msvc
-            code-target: win32-arm64
-          - os: ubuntu-20.04
-            target: x86_64-unknown-linux-gnu
-            code-target: linux-x64
-            container: rockylinux:8
-          - os: ubuntu-20.04
-            target: aarch64-unknown-linux-gnu
-            code-target: linux-arm64
-          - os: ubuntu-20.04
-            target: arm-unknown-linux-gnueabihf
-            code-target: linux-armhf
-          - os: macos-12
-            target: x86_64-apple-darwin
-            code-target: darwin-x64
-          - os: macos-12
-            target: aarch64-apple-darwin
-            code-target: darwin-arm64
