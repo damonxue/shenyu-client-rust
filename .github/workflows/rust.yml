@@ -63,16 +63,24 @@ jobs:
           Start-Process -FilePath "cmd.exe" -ArgumentList "/b /c .\start.bat" -WindowStyle Hidden
 
       - name: Update apt repositories
-        if: matrix.target == 'aarch64-unknown-linux-gnu' || matrix.target == 'arm7-unknown-linux-gnueabihf'
+        if: ${{ contains(matrix.os, 'linux') }}
         run: sudo apt-get update
 
+      - name: Install 686 or x86 target toolchain
+        if: ${{ matrix.target == 'i686-unknown-linux-gnu' || matrix.target == 'x86_64-unknown-linux-gnu' }}
+        run: sudo apt-get install x86_64-linux-gnu-gcc
+
       - name: Install AArch64 target toolchain
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: sudo apt-get install gcc-aarch64-linux-gnu
+        if: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
+        run: sudo apt-get install aarch64-linux-gnu-gcc
 
       - name: Install ARM target toolchain
-        if: matrix.target == 'arm7-unknown-linux-gnueabihf'
-        run: sudo apt-get install gcc-arm-linux-gnueabihf
+        if: ${{ matrix.target == 'arm7-unknown-linux-gnueabihf' }}
+        run: sudo apt-get install arm-linux-gnueabihf-gcc
+
+      - name: Install ARM target toolchain
+        if: ${{ matrix.target == 'riscv64gc-unknown-linux-gnu' }}
+        run: sudo apt-get install riscv64-linux-gnu-gcc
 
       - name: Run tests on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
@@ -93,7 +101,6 @@ jobs:
           TARGET: ${{ matrix.target }}
           OS: ${{ matrix.os }}
           PROJECT_DIR: ${{ github.workspace }}
-        shell: msys2 {0}
         run: .github/workflows/ci.bat
 
       - name: Stop shenyu admin on Unix
@@ -135,7 +142,6 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             code-target: linux-x64
-            container: rockylinux:8
           - target: i686-unknown-linux-gnu
             os: ubuntu-latest
           - target: aarch64-unknown-linux-gnu
