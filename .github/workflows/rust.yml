@@ -56,7 +56,7 @@ jobs:
           cd shenyu\shenyu-2.6.1\shenyu-dist\shenyu-admin-dist\target
           powershell -Command "Expand-Archive -Path 'shenyu-admin-admin-bin.zip' -DestinationPath '.\shenyu-admin-admin-bin'"
           cd shenyu-admin-admin-bin\shenyu-admin-admin-bin\bin
-          .\start.bat
+          start /B .\start.bat
 
       - name: Install dependencies
         if: ${{ !startsWith(matrix.target, 'x86_64') && contains(matrix.target, 'linux') }}
