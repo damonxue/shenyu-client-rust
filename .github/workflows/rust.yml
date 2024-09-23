@@ -40,18 +40,18 @@ jobs:
           command: fmt
           args: --all -- --check
 
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: 'temurin'
-
       - name: Start shenyu admin on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
         shell: bash
         run: sh .github/workflows/shenyu.sh
       - name: Start shenyu admin on Windows
         if: ${{ contains(matrix.os, 'windows') }}
-        run: .github/workflows/shenyu.bat
+        run: |
+          .github/workflows/shenyu.bat
+          cd shenyu\shenyu-2.6.1\shenyu-dist\shenyu-admin-dist\target
+          powershell -Command "Expand-Archive -Path 'shenyu-admin-admin-bin.zip' -DestinationPath '.\shenyu-admin-admin-bin'"
+          cd shenyu-admin-admin-bin\shenyu-admin-admin-bin\bin
+          .\start.bat
 
       - name: Install dependencies
         if: ${{ !startsWith(matrix.target, 'x86_64') && contains(matrix.target, 'linux') }}
