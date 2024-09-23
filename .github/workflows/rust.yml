@@ -49,20 +49,29 @@ jobs:
         if: ${{ !contains(matrix.os, 'windows') }}
         shell: bash
         run: sh .github/workflows/shenyu.sh
-      - name: Start shenyu admin on Windows
+      - name: Build shenyu admin on Windows
         if: ${{ contains(matrix.os, 'windows') }}
         run: |
           .github/workflows/shenyu.bat
+      - name: Start shenyu admin on Windows
+        if: ${{ contains(matrix.os, 'windows') }}
+        run: |
           cd shenyu\shenyu-2.6.1\shenyu-dist\shenyu-admin-dist\target
           powershell -Command "Expand-Archive -Path 'shenyu-admin-admin-bin.zip' -DestinationPath '.\shenyu-admin-admin-bin'"
           cd shenyu-admin-admin-bin\shenyu-admin-admin-bin\bin
-          Start-Process -FilePath "cmd.exe" -ArgumentList "/c .\start.bat" -WindowStyle Hidden
+          Start-Process -FilePath "cmd.exe" -ArgumentList "/b /c .\start.bat" -WindowStyle Hidden
 
-      - name: Install dependencies
-        if: ${{ !startsWith(matrix.target, 'x86_64') && contains(matrix.target, 'linux') }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev pkg-config libc6-dev libc6-dev-i386 gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu gcc-riscv64-linux-gnu
+      - name: Update apt repositories
+        if: matrix.target == 'aarch64-unknown-linux-gnu' || matrix.target == 'arm-unknown-linux-gnueabihf'
+        run: sudo apt-get update
+
+      - name: Install AArch64 target toolchain
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get install gcc-aarch64-linux-gnu
+
+      - name: Install ARM target toolchain
+        if: matrix.target == 'arm-unknown-linux-gnueabihf'
+        run: sudo apt-get install gcc-arm-linux-gnueabihf
 
       - name: Run tests on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
@@ -74,26 +83,6 @@ jobs:
           PROJECT_DIR: ${{ github.workspace }}
         shell: bash
         run: sh .github/workflows/ci.sh
-
-      - name: Install MSYS2
-        if: ${{ contains(matrix.os, 'windows') }}
-        run: |
-          Invoke-WebRequest -Uri https://repo.msys2.org/distrib/msys2-x86_64-latest.exe -OutFile msys2-x86_64-latest.exe
-          Start-Process -FilePath msys2-x86_64-latest.exe -ArgumentList '/S' -Wait
-          Remove-Item msys2-x86_64-latest.exe
-
-      - name: Update MSYS2
-        if: ${{ contains(matrix.os, 'windows') }}
-        shell: msys2 {0}
-        run: |
-          pacman -Syu --noconfirm
-          pacman -Syu --noconfirm
-
-      - name: Install development tools
-        if: ${{ contains(matrix.os, 'windows') }}
-        shell: msys2 {0}
-        run: |
-          pacman -S --noconfirm mingw-w64-x86_64-toolchain
 
       - name: Run tests on Windows
         if: ${{ contains(matrix.os, 'windows') }}
@@ -121,56 +110,29 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [
-          x86_64-unknown-linux-gnu,
-          i686-unknown-linux-gnu,
-          aarch64-unknown-linux-gnu,
-          armv7-unknown-linux-gnueabihf,
-          riscv64gc-unknown-linux-gnu,
-          thumbv7neon-unknown-linux-gnueabihf,
-#          mips64-unknown-linux-muslabi64,
-#          loongarch64-unknown-linux-gnu,
-#          s390x-unknown-linux-gnu,
-
-          x86_64-apple-darwin,
-          aarch64-apple-darwin,
-
-          x86_64-pc-windows-gnu,
-          i686-pc-windows-gnu,
-          x86_64-pc-windows-msvc,
-          i686-pc-windows-msvc,
-        ]
         channel: [ stable, nightly-2024-08-02 ]
         include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-          - target: i686-unknown-linux-gnu
-            os: ubuntu-latest
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-          - target: armv7-unknown-linux-gnueabihf
-            os: ubuntu-latest
-          - target: riscv64gc-unknown-linux-gnu
-            os: ubuntu-latest
-          - target: thumbv7neon-unknown-linux-gnueabihf
-            os: ubuntu-latest
-#          - target: mips64-unknown-linux-muslabi64
-#            os: ubuntu-latest
-#          - target: loongarch64-unknown-linux-gnu
-#            os: ubuntu-latest
-#          - target: s390x-unknown-linux-gnu
-#            os: ubuntu-latest
-
-          - target: x86_64-apple-darwin
-            os: macos-latest
-          - target: aarch64-apple-darwin
-            os: macos-14
-
-          - target: x86_64-pc-windows-gnu
-            os: windows-latest
-          - target: i686-pc-windows-gnu
-            os: windows-latest
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-          - target: i686-pc-windows-msvc
-            os: windows-latest
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            code-target: win32-x64
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            code-target: win32-arm64
+          - os: ubuntu-20.04
+            target: x86_64-unknown-linux-gnu
+            code-target: linux-x64
+            container: rockylinux:8
+          - os: ubuntu-20.04
+            target: aarch64-unknown-linux-gnu
+            code-target: linux-arm64
+          - os: ubuntu-20.04
+            target: arm-unknown-linux-gnueabihf
+            code-target: linux-armhf
+          - os: macos-12
+            target: x86_64-apple-darwin
+            code-target: darwin-x64
+          - os: macos-12
+            target: aarch64-apple-darwin
+            code-target: darwin-arm64
