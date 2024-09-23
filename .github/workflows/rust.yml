@@ -74,6 +74,27 @@ jobs:
           PROJECT_DIR: ${{ github.workspace }}
         shell: bash
         run: sh .github/workflows/ci.sh
+
+      - name: Install MSYS2
+        if: ${{ contains(matrix.os, 'windows') }}
+        run: |
+          Invoke-WebRequest -Uri https://repo.msys2.org/distrib/msys2-x86_64-latest.exe -OutFile msys2-x86_64-latest.exe
+          Start-Process -FilePath msys2-x86_64-latest.exe -ArgumentList '/S' -Wait
+          Remove-Item msys2-x86_64-latest.exe
+
+      - name: Update MSYS2
+        if: ${{ contains(matrix.os, 'windows') }}
+        shell: msys2 {0}
+        run: |
+          pacman -Syu --noconfirm
+          pacman -Syu --noconfirm
+
+      - name: Install development tools
+        if: ${{ contains(matrix.os, 'windows') }}
+        shell: msys2 {0}
+        run: |
+          pacman -S --noconfirm mingw-w64-x86_64-toolchain
+
       - name: Run tests on Windows
         if: ${{ contains(matrix.os, 'windows') }}
         env:
