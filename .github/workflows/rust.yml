@@ -40,6 +40,11 @@ jobs:
           command: fmt
           args: --all -- --check
 
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
       - name: Start shenyu admin on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
         shell: bash
