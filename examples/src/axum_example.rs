@@ -21,7 +21,6 @@ use axum::{routing::get, Router};
 use shenyu_client_rust::axum_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
 use shenyu_client_rust::{core::ShenyuClient, IRouter};
-use tokio::signal;
 
 async fn health_handler() -> &'static str {
     "OK"
@@ -33,6 +32,20 @@ async fn create_user_handler() -> &'static str {
 
 #[tokio::main]
 async fn main() {
+    std::thread::spawn(|| {
+        // ctrl+c after 10 seconds, just for CI
+        std::thread::sleep(std::time::Duration::from_secs(10));
+        let pid = std::process::id() as _;
+        unsafe {
+            #[cfg(unix)]
+            libc::kill(pid, libc::SIGINT);
+            #[cfg(windows)]
+            windows_sys::Win32::System::Console::GenerateConsoleCtrlEvent(
+                windows_sys::Win32::System::Console::CTRL_C_EVENT,
+                pid,
+            );
+        };
+    });
     let app = ShenYuRouter::<()>::new("shenyu_client_app")
         .nest("/api", ShenYuRouter::new("api"))
         .route("/health", "get", get(health_handler))
@@ -42,14 +55,17 @@ async fn main() {
 
     let axum_app: Router = app.into();
     client.register().expect("TODO: panic message");
+    ctrlc::set_handler(move || {
+        client.offline_register();
+        std::process::exit(0);
+    })
+    .expect("Error setting Ctrl-C handler");
 
     // Start Axum server
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, axum_app)
-        .with_graceful_shutdown(async move {
-            signal::ctrl_c().await.expect("failed to listen for event");
-            client.offline_register();
-        })
-        .await
-        .unwrap();
+    axum::serve(
+        tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap(),
+        axum_app,
+    )
+    .await
+    .unwrap();
 }

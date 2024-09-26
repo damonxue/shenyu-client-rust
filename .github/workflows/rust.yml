@@ -24,28 +24,153 @@ env:
   CARGO_TERM_COLOR: always
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
-    services:
-      shenyu-admin:
-        image: apache/shenyu-admin:latest
-        ports:
-          - 9095:9095
-        options: --name shenyu-admin
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
     steps:
       - uses: actions/checkout@v4
-      - name: Build
-        run: cargo build --verbose --all-features
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.target == 'i686-pc-windows-gnu' && format('{0}-i686-pc-windows-gnu', matrix.channel) || matrix.channel }}
+          target: ${{ matrix.target }}
+          override: true
+          components: rustfmt
 
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
 
-      - name: Run tests
-        run: cargo test --verbose --all-features --lib
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
 
-      - name: Run axum_example
-        run: timeout 10s cargo run --package examples --all-features --bin axum_example || true
+      - name: Start shenyu admin on Unix
+        if: ${{ !contains(matrix.os, 'windows') }}
+        shell: bash
+        run: sh .github/workflows/shenyu.sh
+      - name: Build shenyu admin on Windows
+        if: ${{ contains(matrix.os, 'windows') }}
+        run: .github/workflows/shenyu.bat
+      - name: Start shenyu admin on Windows
+        if: ${{ contains(matrix.os, 'windows') }}
+        run: |
+          cd shenyu\shenyu-2.6.1\shenyu-dist\shenyu-admin-dist\target
+          powershell -Command "Expand-Archive -Path 'shenyu-admin-admin-bin.zip' -DestinationPath '.\shenyu-admin-admin-bin'"
+          cd shenyu-admin-admin-bin\shenyu-admin-admin-bin\bin
+          Start-Process -FilePath "cmd.exe" -ArgumentList "/b /c .\start.bat" -WindowStyle Hidden
 
-      - name: Run actix_web_example
-        run: timeout 10s cargo run --package examples --all-features --bin actix_web_example || true
+      - name: Update apt repositories
+        if: ${{ contains(matrix.target, 'linux') }}
+        run: sudo apt-get update
+
+      - name: Install AArch64 target toolchain
+        if: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
+        run: sudo apt-get install gcc-aarch64-linux-gnu
+
+      - name: Install ARM target toolchain
+        if: ${{ matrix.target == 'arm7-unknown-linux-gnueabihf' }}
+        run: sudo apt-get install gcc-arm-linux-gnueabihf
+
+      - name: Install ARM target toolchain
+        if: ${{ matrix.target == 'riscv64gc-unknown-linux-gnu' }}
+        run: sudo apt-get install gcc-riscv64-linux-gnu
+
+      - name: Run tests on Unix
+        if: ${{ !contains(matrix.os, 'windows') }}
+        env:
+          CHANNEL: ${{ matrix.channel }}
+          CROSS: ${{ !startsWith(matrix.target, 'x86_64') && contains(matrix.target, 'linux') && '1' || '0' }}
+          TARGET: ${{ matrix.target }}
+          OS: ${{ matrix.os }}
+          PROJECT_DIR: ${{ github.workspace }}
+        shell: bash
+        run: sh .github/workflows/ci.sh
+
+      - name: Run tests on Windows
+        if: ${{ contains(matrix.os, 'windows') }}
+        env:
+          CHANNEL: ${{ matrix.channel }}
+          CROSS: ${{ !startsWith(matrix.target, 'x86_64') && contains(matrix.target, 'linux') && '1' || '0' }}
+          TARGET: ${{ matrix.target }}
+          OS: ${{ matrix.os }}
+          PROJECT_DIR: ${{ github.workspace }}
+        run: .github/workflows/ci.bat
+        continue-on-error: true
+
+      - name: Stop shenyu admin on Unix
+        if: ${{ !contains(matrix.os, 'windows') }}
+        run: |
+          cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin
+          sh ./stop.sh
+#      - name: Stop shenyu admin on Windows
+#        if: ${{ contains(matrix.os, 'windows') }}
+#        run:  |
+#          cd %USERPROFILE%
+#          cd shenyu\shenyu-dist\shenyu-admin-dist\target\shenyu-admin\bin
+#          .\stop.bat
+
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [
+          x86_64-unknown-linux-gnu,
+#          i686-unknown-linux-gnu,
+#          aarch64-unknown-linux-gnu,
+#          armv7-unknown-linux-gnueabihf,
+#          riscv64gc-unknown-linux-gnu,
+#          thumbv7neon-unknown-linux-gnueabihf,
+#          mips64-unknown-linux-muslabi64,
+#          loongarch64-unknown-linux-gnu,
+#          s390x-unknown-linux-gnu,
+
+          x86_64-apple-darwin,
+          aarch64-apple-darwin,
+
+          x86_64-pc-windows-gnu,
+          i686-pc-windows-gnu,
+          x86_64-pc-windows-msvc,
+          i686-pc-windows-msvc,
+        ]
+        channel: [ stable, nightly ]
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            code-target: linux-x64
+#          - target: i686-unknown-linux-gnu
+#            os: ubuntu-latest
+#          - target: aarch64-unknown-linux-gnu
+#            os: ubuntu-latest
+#            code-target: linux-arm64
+#          - target: armv7-unknown-linux-gnueabihf
+#            os: ubuntu-latest
+#            code-target: linux-armhf
+#          - target: riscv64gc-unknown-linux-gnu
+#            os: ubuntu-latest
+#          - target: thumbv7neon-unknown-linux-gnueabihf
+#            os: ubuntu-latest
+#          - target: mips64-unknown-linux-muslabi64
+#            os: ubuntu-latest
+#          - target: loongarch64-unknown-linux-gnu
+#            os: ubuntu-latest
+#          - target: s390x-unknown-linux-gnu
+#            os: ubuntu-latest
+
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-14
+
+          - target: x86_64-pc-windows-gnu
+            os: windows-latest
+          - target: i686-pc-windows-gnu
+            os: windows-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            code-target: win32-x64
+          - target: i686-pc-windows-msvc
+            os: windows-latest
+#          - target: aarch64-pc-windows-msvc
+#            os: windows-latest
+#            code-target: win32-arm64
