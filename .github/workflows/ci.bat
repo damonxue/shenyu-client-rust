@@ -21,4 +21,3 @@ set RUST_BACKTRACE=1
 
 %CARGO% run --package examples --all-features --bin axum_example || exit /b 0
 %CARGO% run --package examples --all-features --bin actix_web_example || exit /b 0
-exit /b 0

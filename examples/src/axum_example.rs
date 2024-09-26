@@ -56,16 +56,18 @@ async fn main() {
 
     let axum_app: Router = app.into();
     client.register().expect("TODO: panic message");
+    ctrlc::set_handler(move || {
+        client.offline_register();
+        #[cfg(windows)]
+        std::process::exit(0);
+    })
+    .expect("Error setting Ctrl-C handler");
 
     // Start Axum server
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, axum_app)
-        .with_graceful_shutdown(async move {
-            signal::ctrl_c().await.expect("failed to listen for event");
-            client.offline_register();
-            #[cfg(windows)]
-            std::process::exit(0);
-        })
-        .await
-        .unwrap();
+    axum::serve(
+        tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap(),
+        axum_app,
+    )
+    .await
+    .unwrap();
 }
