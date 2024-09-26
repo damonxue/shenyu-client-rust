@@ -171,6 +171,6 @@ jobs:
             code-target: win32-x64
           - target: i686-pc-windows-msvc
             os: windows-latest
-          - os: windows-latest
-            target: aarch64-pc-windows-msvc
-            code-target: win32-arm64
+#          - target: aarch64-pc-windows-msvc
+#            os: windows-latest
+#            code-target: win32-arm64
