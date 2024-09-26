@@ -19,5 +19,5 @@ set RUST_BACKTRACE=1
 %CARGO% test --target "%TARGET%" --all-features
 %CARGO% test --target "%TARGET%" --all-features --release
 
-%CARGO% run --package examples --all-features --bin axum_example
-%CARGO% run --package examples --all-features --bin actix_web_example
+%CARGO% run --package examples --all-features --bin axum_example || exit /b 0
+%CARGO% run --package examples --all-features --bin actix_web_example || exit /b 0

@@ -21,7 +21,6 @@ use axum::{routing::get, Router};
 use shenyu_client_rust::axum_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
 use shenyu_client_rust::{core::ShenyuClient, IRouter};
-use tokio::signal;
 
 async fn health_handler() -> &'static str {
     "OK"
@@ -58,7 +57,6 @@ async fn main() {
     client.register().expect("TODO: panic message");
     ctrlc::set_handler(move || {
         client.offline_register();
-        #[cfg(windows)]
         std::process::exit(0);
     })
     .expect("Error setting Ctrl-C handler");

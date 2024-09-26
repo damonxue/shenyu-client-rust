@@ -268,22 +268,29 @@ pub mod actix_web_impl {
     macro_rules! register_once {
         ($config:expr, $router:expr, $port:literal) => {
             use std::sync::OnceLock;
+            use $crate::IRouter;
 
             static ONCE: OnceLock<()> = OnceLock::new();
             ONCE.get_or_init(|| {
                 let client = {
-                    let res =
-                        ShenyuClient::from($config, $router.app_name(), $router.uri_infos(), $port);
+                    let res = $crate::core::ShenyuClient::from(
+                        $config,
+                        $router.app_name(),
+                        $router.uri_infos(),
+                        $port,
+                    );
                     let client = res.unwrap();
                     client
                 };
                 client.register().expect("Failed to register");
-                ctrlc::set_handler(move || {
-                    client.offline_register();
-                    #[cfg(windows)]
-                    std::process::exit(0);
-                })
-                .expect("Error setting Ctrl-C handler");
+                actix_web::rt::spawn(async move {
+                    // Add shutdown hook
+                    tokio::select! {
+                        _ = actix_web::rt::signal::ctrl_c() => {
+                            client.offline_register();
+                        }
+                    }
+                });
             });
         };
     }

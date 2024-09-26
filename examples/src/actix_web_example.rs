@@ -19,7 +19,7 @@
 use actix_web::{middleware, App, HttpServer, Responder};
 use shenyu_client_rust::actix_web_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
-use shenyu_client_rust::{core::ShenyuClient, register_once, shenyu_router, IRouter};
+use shenyu_client_rust::{register_once, shenyu_router};
 
 async fn health_handler() -> impl Responder {
     "OK"
