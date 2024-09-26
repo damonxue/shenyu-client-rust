@@ -22,6 +22,7 @@ use dashmap::DashMap;
 use serde_json::Value;
 use std::io::{Error, ErrorKind};
 use std::net::IpAddr;
+use tracing::{error, info, warn};
 use ureq::OrAnyStatus;
 
 pub const REGISTER_META_DATA_SUFFIX: &str = "/shenyu-client/register-metadata";
@@ -172,7 +173,7 @@ impl ShenyuClient {
         if msg == "success" {
             Ok(true)
         } else {
-            println!(
+            warn!(
                 "Request ({}) failed, status code: {}, msg: {}",
                 url, status_code, msg
             );
@@ -227,7 +228,7 @@ impl ShenyuClient {
 
         for url in &self.register_uri_list {
             if self.request(url, &json_data)? {
-                println!(
+                info!(
                     "[SUCCESS], register uri success, register data: {:#?}",
                     json_data
                 );
@@ -235,7 +236,7 @@ impl ShenyuClient {
             }
         }
 
-        println!(
+        error!(
             "[ERROR], register uri failed, app_name: {}, host: {}, port: {}",
             app_name,
             host.clone().unwrap(),
@@ -299,7 +300,7 @@ impl ShenyuClient {
 
         for url in &self.register_meta_data_path_list {
             if self.request(url, &json_data)? {
-                println!(
+                info!(
                     "[SUCCESS], register metadata success, register data: {:#?}",
                     json_data
                 );
@@ -307,7 +308,7 @@ impl ShenyuClient {
             }
         }
 
-        println!(
+        error!(
             "[ERROR], register metadata failed, app_name: {}, path: {}, contextPath: {}",
             app_name, path, context_path
         );
@@ -338,7 +339,7 @@ impl ShenyuClient {
 
         for url in &self.register_discover_config_servers {
             if self.request(url, &json_data)? {
-                println!(
+                info!(
                     "[SUCCESS], register discover config success, register data: {:#?}",
                     json_data
                 );
@@ -346,7 +347,7 @@ impl ShenyuClient {
             }
         }
 
-        println!(
+        error!(
             "[ERROR], register discover config failed, discovery_type: {}, host: {}, port: {}",
             discovery_type,
             host.clone().unwrap(),
@@ -374,7 +375,7 @@ impl ShenyuClient {
 
         for url in &self.register_offline_servers {
             if self.request(url, &json_data).unwrap() {
-                println!(
+                info!(
                     "[SUCCESS], offline success, register data: {:#?}",
                     json_data
                 );
@@ -382,7 +383,7 @@ impl ShenyuClient {
             }
         }
 
-        println!(
+        error!(
             "[ERROR], register uri failed, app_name: {}, host: {}, port: {}",
             app_name,
             host.clone().unwrap(),

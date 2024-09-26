@@ -22,6 +22,9 @@ use shenyu_client_rust::axum_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
 use shenyu_client_rust::{core::ShenyuClient, IRouter};
 
+mod ci;
+use crate::ci::_CI_CTRL_C;
+
 async fn health_handler() -> &'static str {
     "OK"
 }
@@ -32,20 +35,11 @@ async fn create_user_handler() -> &'static str {
 
 #[tokio::main]
 async fn main() {
-    std::thread::spawn(|| {
-        // ctrl+c after 10 seconds, just for CI
-        std::thread::sleep(std::time::Duration::from_secs(10));
-        let pid = std::process::id() as _;
-        unsafe {
-            #[cfg(unix)]
-            libc::kill(pid, libc::SIGINT);
-            #[cfg(windows)]
-            windows_sys::Win32::System::Console::GenerateConsoleCtrlEvent(
-                windows_sys::Win32::System::Console::CTRL_C_EVENT,
-                pid,
-            );
-        };
-    });
+    // Spawn a thread to listen for Ctrl-C events and shutdown the server
+    std::thread::spawn(_CI_CTRL_C);
+    // Initialize tracing
+    tracing_subscriber::fmt::init();
+
     let app = ShenYuRouter::<()>::new("shenyu_client_app")
         .nest("/api", ShenYuRouter::new("api"))
         .route("/health", "get", get(health_handler))

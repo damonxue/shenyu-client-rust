@@ -21,6 +21,9 @@ use shenyu_client_rust::actix_web_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
 use shenyu_client_rust::{register_once, shenyu_router};
 
+mod ci;
+use crate::ci::_CI_CTRL_C;
+
 async fn health_handler() -> impl Responder {
     "OK"
 }
@@ -35,20 +38,11 @@ async fn index() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    std::thread::spawn(|| {
-        // ctrl+c after 10 seconds, just for CI
-        std::thread::sleep(std::time::Duration::from_secs(10));
-        let pid = std::process::id() as _;
-        unsafe {
-            #[cfg(unix)]
-            libc::kill(pid, libc::SIGINT);
-            #[cfg(windows)]
-            windows_sys::Win32::System::Console::GenerateConsoleCtrlEvent(
-                windows_sys::Win32::System::Console::CTRL_C_EVENT,
-                pid,
-            );
-        };
-    });
+    // Spawn a thread to listen for Ctrl-C events and shutdown the server
+    std::thread::spawn(_CI_CTRL_C);
+    // Initialize tracing
+    tracing_subscriber::fmt::init();
+
     HttpServer::new(move || {
         let mut router = ShenYuRouter::new("shenyu_client_app");
         let mut app = App::new().wrap(middleware::Logger::default());
