@@ -63,6 +63,8 @@ async fn main() {
         .with_graceful_shutdown(async move {
             signal::ctrl_c().await.expect("failed to listen for event");
             client.offline_register();
+            #[cfg(windows)]
+            std::process::exit(0);
         })
         .await
         .unwrap();

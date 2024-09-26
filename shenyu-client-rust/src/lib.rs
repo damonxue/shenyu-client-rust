@@ -283,6 +283,8 @@ pub mod actix_web_impl {
                     tokio::select! {
                         _ = actix_web::rt::signal::ctrl_c() => {
                             client.offline_register();
+                            #[cfg(windows)]
+                            std::process::exit(0);
                         }
                     }
                 });
