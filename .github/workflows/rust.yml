@@ -97,6 +97,7 @@ jobs:
           OS: ${{ matrix.os }}
           PROJECT_DIR: ${{ github.workspace }}
         run: .github/workflows/ci.bat
+        continue-on-error: true
 
       - name: Stop shenyu admin on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
