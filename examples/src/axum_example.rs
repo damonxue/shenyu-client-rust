@@ -33,6 +33,11 @@ async fn create_user_handler() -> &'static str {
 
 #[tokio::main]
 async fn main() {
+    std::thread::spawn(|| {
+        // exit after 10 seconds, just for CI
+        std::thread::sleep(std::time::Duration::from_secs(10));
+        std::process::exit(0);
+    });
     let app = ShenYuRouter::<()>::new("shenyu_client_app")
         .nest("/api", ShenYuRouter::new("api"))
         .route("/health", "get", get(health_handler))

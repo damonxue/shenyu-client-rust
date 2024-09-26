@@ -35,6 +35,11 @@ async fn index() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    std::thread::spawn(|| {
+        // exit after 10 seconds, just for CI
+        std::thread::sleep(std::time::Duration::from_secs(10));
+        std::process::exit(0);
+    });
     HttpServer::new(move || {
         let mut router = ShenYuRouter::new("shenyu_client_app");
         let mut app = App::new().wrap(middleware::Logger::default());
