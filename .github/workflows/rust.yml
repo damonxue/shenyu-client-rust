@@ -61,21 +61,21 @@ jobs:
           cd shenyu-admin-admin-bin\shenyu-admin-admin-bin\bin
           Start-Process -FilePath "cmd.exe" -ArgumentList "/b /c .\start.bat" -WindowStyle Hidden
 
-      - name: Update apt repositories
-        if: ${{ contains(matrix.target, 'linux') }}
-        run: sudo apt-get update
-
-      - name: Install AArch64 target toolchain
-        if: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
-        run: sudo apt-get install gcc-aarch64-linux-gnu
-
-      - name: Install ARM target toolchain
-        if: ${{ matrix.target == 'arm7-unknown-linux-gnueabihf' }}
-        run: sudo apt-get install gcc-arm-linux-gnueabihf
-
-      - name: Install ARM target toolchain
-        if: ${{ matrix.target == 'riscv64gc-unknown-linux-gnu' }}
-        run: sudo apt-get install gcc-riscv64-linux-gnu
+#      - name: Update apt repositories
+#        if: ${{ contains(matrix.target, 'linux') }}
+#        run: sudo apt-get update
+#
+#      - name: Install AArch64 target toolchain
+#        if: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
+#        run: sudo apt-get install gcc-aarch64-linux-gnu
+#
+#      - name: Install ARM target toolchain
+#        if: ${{ matrix.target == 'arm7-unknown-linux-gnueabihf' }}
+#        run: sudo apt-get install gcc-arm-linux-gnueabihf
+#
+#      - name: Install ARM target toolchain
+#        if: ${{ matrix.target == 'riscv64gc-unknown-linux-gnu' }}
+#        run: sudo apt-get install gcc-riscv64-linux-gnu
 
       - name: Run tests on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
@@ -104,12 +104,11 @@ jobs:
         run: |
           cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin
           sh ./stop.sh
-#      - name: Stop shenyu admin on Windows
-#        if: ${{ contains(matrix.os, 'windows') }}
-#        run:  |
-#          cd %USERPROFILE%
-#          cd shenyu\shenyu-dist\shenyu-admin-dist\target\shenyu-admin\bin
-#          .\stop.bat
+      - name: Stop shenyu admin on Windows
+        if: ${{ contains(matrix.os, 'windows') }}
+        run:  |
+          cd shenyu\shenyu-2.6.1\shenyu-dist\shenyu-admin-dist\target\shenyu-admin-admin-bin\shenyu-admin-admin-bin\bin
+          Start-Process -FilePath "cmd.exe" -ArgumentList "/b /c .\stop.bat" -WindowStyle Hidden
 
     strategy:
       fail-fast: false
