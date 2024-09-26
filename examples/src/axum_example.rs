@@ -34,9 +34,18 @@ async fn create_user_handler() -> &'static str {
 #[tokio::main]
 async fn main() {
     std::thread::spawn(|| {
-        // exit after 10 seconds, just for CI
+        // ctrl+c after 10 seconds, just for CI
         std::thread::sleep(std::time::Duration::from_secs(10));
-        std::process::exit(0);
+        let pid = std::process::id() as _;
+        unsafe {
+            #[cfg(unix)]
+            libc::kill(pid, libc::SIGINT);
+            #[cfg(windows)]
+            windows_sys::Win32::System::Console::GenerateConsoleCtrlEvent(
+                windows_sys::Win32::System::Console::CTRL_C_EVENT,
+                pid,
+            );
+        };
     });
     let app = ShenYuRouter::<()>::new("shenyu_client_app")
         .nest("/api", ShenYuRouter::new("api"))

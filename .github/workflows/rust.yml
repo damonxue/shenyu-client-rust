@@ -52,8 +52,7 @@ jobs:
         run: sh .github/workflows/shenyu.sh
       - name: Build shenyu admin on Windows
         if: ${{ contains(matrix.os, 'windows') }}
-        run: |
-          .github/workflows/shenyu.bat
+        run: .github/workflows/shenyu.bat
       - name: Start shenyu admin on Windows
         if: ${{ contains(matrix.os, 'windows') }}
         run: |
